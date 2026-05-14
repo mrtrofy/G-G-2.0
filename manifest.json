@@ -1,0 +1,21 @@
+{
+  "name": "G&G Shopping Business Suite",
+  "short_name": "G&G Shopping",
+  "description": "Sistema de gestión de inventario y ventas para G&G Shopping",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#8b5e2e",
+  "icons": [
+    {
+      "src": "logo1.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo2.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
