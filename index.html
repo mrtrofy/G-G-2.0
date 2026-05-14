@@ -61,9 +61,13 @@
     <div class="bg-logo"></div>
 
     <script type="module">
-        import { initializeApp } from "firebase/app";
-        import { getAnalytics } from "firebase/analytics";
-       const firebaseConfig = {
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getFirestore, collection, addDoc, getDocs, doc, 
+            updateDoc, deleteDoc, onSnapshot, query, orderBy 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
             apiKey: "AIzaSyD1sJKaLw4ba41SPTMy1ZoPQCSHynuzLrA",
             authDomain: "gyg-2-0.firebaseapp.com",
             projectId: "gyg-2-0",
@@ -71,13 +75,13 @@
             messagingSenderId: "248474716571",
             appId: "1:248474716571:web:b6a2bfa565c3125d08393e",
             measurementId: "G-DPBHL3P6D7"
-            };
+        };
 
         let db;
         try {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-        } catch (e) { console.warn("Modo local activado."); }
+        } catch (e) { console.warn("Modo local activado o error de config."); }
 
         const appId = 'gg-shopping-pos';
         let currentStore = null; 
@@ -88,10 +92,12 @@
         let editingProductId = null;
         let pendingAction = null;
 
+        // 2. CLAVES DE ACCESO SEGÚN TUS INSTRUCCIONES
         const PASS_STORE1 = "Vision&Resultados.2026";
         const PASS_STORE2 = "Estrategia*Valor+Diciplina";
         const PASS_MANAGEMENT = "MisReyes1623!";
 
+        // 3. FUNCIÓN DE VISUALIZACIÓN DE CONTRASEÑA (CORREGIDA)
         window.togglePassword = (inputId, iconId) => {
             const input = document.getElementById(inputId);
             const icon = document.getElementById(iconId);
@@ -102,7 +108,7 @@
                 input.type = "password";
                 icon.setAttribute('data-lucide', 'eye');
             }
-            lucide.createIcons();
+            lucide.createIcons(); // Refresca los iconos visualmente
         };
 
         window.showView = (viewKey) => {
@@ -116,7 +122,7 @@
 
         window.selectStore = (storeNum) => {
             const passInput = document.getElementById(`store-pass-${storeNum}`);
-            const pass = passInput.value;
+            const pass = passInput.value.trim(); // Trim evita errores por espacios accidentales
             const correctPass = storeNum === 1 ? PASS_STORE1 : PASS_STORE2;
 
             if (pass === correctPass) {
@@ -124,8 +130,9 @@
                 document.getElementById('store-name-display').innerText = `Tienda ${storeNum}`;
                 setupFirestoreRefs();
                 window.showView('main');
+                passInput.value = ""; // Limpiar por seguridad
             } else {
-                showToast("Contraseña incorrecta", "error");
+                showToast("Contraseña de Sucursal Incorrecta", "error");
             }
         };
 
@@ -272,11 +279,15 @@
         };
 
         window.checkPassword = () => {
-            if (document.getElementById('pass-input').value === PASS_MANAGEMENT) {
+            const input = document.getElementById('pass-input');
+            if (input.value === PASS_MANAGEMENT) {
                 document.getElementById('modal-password').classList.remove('active-modal');
+                input.value = "";
                 window.showView(pendingAction);
                 if (pendingAction === 'sales') loadSales();
-            } else { showToast("Clave incorrecta", "error"); }
+            } else { 
+                showToast("Clave Maestra Incorrecta", "error"); 
+            }
         };
 
         window.applyFilters = () => {
