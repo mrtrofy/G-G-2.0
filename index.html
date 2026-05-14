@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G&G Shopping - POS System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="shortcut icon" href="logo.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0a0a0a; color: #e5e5e5; overflow-x: hidden; margin: 0; }
+        .gold-gradient { background: linear-gradient(135deg, #c5a059 0%, #8e6d2f 100%); }
+        .gold-text { color: #c5a059; }
+        .glass-card { background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(197, 160, 89, 0.2); }
+        
+        .bg-logo {
+            background-image: url('logo.ico');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: contain;
+            opacity: 0.03;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        input, select, textarea { background: #1a1a1a !important; border: 1px solid #333 !important; color: white !important; border-radius: 8px !important; }
+        input:focus { border-color: #c5a059 !important; outline: none; box-shadow: 0 0 0 2px rgba(197, 160, 89, 0.1); }
+        .btn-hover { transition: all 0.2s; cursor: pointer; }
+        .btn-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(197, 160, 89, 0.2); }
+        
+        .password-container { position: relative; width: 100%; }
+        .password-toggle { 
+            position: absolute; 
+            right: 12px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            color: #666; 
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        .modal { background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; position: fixed; inset: 0; z-index: 100; padding: 20px; }
+        .active-modal { display: flex; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #c5a059; border-radius: 10px; }
+        
+        .discount-btn { border: 1px solid #444; padding: 5px 10px; border-radius: 6px; font-size: 12px; transition: all 0.2s; color: #999; }
+        .discount-btn.active { background: #c5a059; color: black; border-color: #c5a059; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="bg-logo"></div>
+
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getAnalytics } from "firebase/analytics";
+       const firebaseConfig = {
+            apiKey: "AIzaSyD1sJKaLw4ba41SPTMy1ZoPQCSHynuzLrA",
+            authDomain: "gyg-2-0.firebaseapp.com",
+            projectId: "gyg-2-0",
+            storageBucket: "gyg-2-0.firebasestorage.app",
+            messagingSenderId: "248474716571",
+            appId: "1:248474716571:web:b6a2bfa565c3125d08393e",
+            measurementId: "G-DPBHL3P6D7"
+            };
+
+        let db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+        } catch (e) { console.warn("Modo local activado."); }
+
+        const appId = 'gg-shopping-pos';
+        let currentStore = null; 
+        let cart = [];
+        let stock = [];
+        let currentDiscount = 0;
+        let productsRef, salesRef, incidentsRef, expensesRef;
+        let editingProductId = null;
+        let pendingAction = null;
+
+        const PASS_STORE1 = "Vision&Resultados.2026";
+        const PASS_STORE2 = "Estrategia*Valor+Diciplina";
+        const PASS_MANAGEMENT = "MisReyes1623!";
+
+        window.togglePassword = (inputId, iconId) => {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = "password";
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        };
+
+        window.showView = (viewKey) => {
+            document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
+            const target = document.getElementById('view-' + viewKey);
+            if (target) {
+                target.classList.remove('hidden');
+                window.scrollTo(0,0);
+            }
+        };
+
+        window.selectStore = (storeNum) => {
+            const passInput = document.getElementById(`store-pass-${storeNum}`);
+            const pass = passInput.value;
+            const correctPass = storeNum === 1 ? PASS_STORE1 : PASS_STORE2;
+
+            if (pass === correctPass) {
+                currentStore = `tienda_${storeNum}`;
+                document.getElementById('store-name-display').innerText = `Tienda ${storeNum}`;
+                setupFirestoreRefs();
+                window.showView('main');
+            } else {
+                showToast("Contraseña incorrecta", "error");
+            }
+        };
+
+        function setupFirestoreRefs() {
+            if (!db) return;
+            productsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`);
+            salesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_sales`);
+            incidentsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_incidents`);
+            expensesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_expenses`);
+
+            onSnapshot(productsRef, (snapshot) => {
+                stock = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateManualSearchList();
+            });
+        }
+
+        function updateManualSearchList() {
+            const select = document.getElementById('pos-manual-select');
+            if(!select) return;
+            select.innerHTML = '<option value="">-- Buscar Producto Manualmente --</option>';
+            stock.filter(p => p.quantity > 0).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.barcode;
+                opt.textContent = `${p.name} - ${p.size}/${p.color} - $${p.price}`;
+                select.appendChild(opt);
+            });
+        }
+
+        window.addToCart = (manualCode = null) => {
+            const code = manualCode || document.getElementById('pos-scanner').value;
+            if (!code) return;
+            const product = stock.find(p => p.barcode === code);
+            if (product && product.quantity > 0) {
+                const existing = cart.find(item => item.barcode === code);
+                if (existing) existing.qty += 1;
+                else cart.push({ ...product, qty: 1 });
+                renderCart();
+                document.getElementById('pos-scanner').value = '';
+                document.getElementById('pos-scanner').focus();
+            } else if (product) showToast("Sin stock disponible", "error");
+            else showToast("Producto no encontrado", "error");
+        };
+
+        window.setDiscount = (pct) => {
+            currentDiscount = pct;
+            document.querySelectorAll('.discount-btn').forEach(btn => btn.classList.toggle('active', parseInt(btn.dataset.pct) === pct));
+            renderCart();
+        };
+
+        function renderCart() {
+            const container = document.getElementById('cart-items');
+            let subtotal = 0;
+            container.innerHTML = cart.map((item, idx) => {
+                subtotal += item.price * item.qty;
+                return `
+                    <div class="flex justify-between items-center bg-zinc-900/50 p-4 rounded-xl mb-3 border border-zinc-800">
+                        <div>
+                            <p class="font-bold text-sm gold-text">${item.name}</p>
+                            <p class="text-xs text-zinc-500">${item.size} | ${item.color} (x${item.qty})</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="font-bold text-white">$${(item.price * item.qty).toFixed(2)}</span>
+                            <button onclick="removeFromCart(${idx})" class="text-red-500 hover:bg-red-500/10 p-2 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>`;
+            }).join('');
+            const discountVal = subtotal * (currentDiscount / 100);
+            document.getElementById('cart-subtotal').innerText = subtotal.toFixed(2);
+            document.getElementById('cart-discount-val').innerText = discountVal.toFixed(2);
+            document.getElementById('cart-total').innerText = (subtotal - discountVal).toFixed(2);
+            lucide.createIcons();
+        }
+
+        window.removeFromCart = (idx) => {
+            cart.splice(idx, 1);
+            renderCart();
+        };
+
+        window.finishSale = async () => {
+            if (cart.length === 0) return showToast("El carrito está vacío", "error");
+            const methods = [];
+            if (document.getElementById('pay-usd').checked) methods.push("USD");
+            if (document.getElementById('pay-cash').checked) methods.push("Efectivo");
+            if (document.getElementById('pay-mobile').checked) methods.push("Pago Móvil");
+            if (document.getElementById('pay-zelle').checked) methods.push("Zelle");
+            if (methods.length === 0) return showToast("Seleccione al menos un método de pago", "error");
+
+            const total = parseFloat(document.getElementById('cart-total').innerText);
+            try {
+                /* Guardado en Firebase - Verificado para reflejar en panel de ventas */
+                await addDoc(salesRef, { 
+                    total, 
+                    date: new Date().toLocaleDateString(), 
+                    timestamp: new Date().toISOString(), 
+                    methods,
+                    items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price }))
+                });
+                
+                for (let item of cart) {
+                    const prod = stock.find(p => p.barcode === item.barcode);
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`, prod.id), {
+                        quantity: prod.quantity - item.qty
+                    });
+                }
+
+                showToast("Venta Registrada Exitosamente", "success");
+                cart = [];
+                window.setDiscount(0);
+                renderCart();
+            } catch(e) { showToast("Error al guardar la venta", "error"); }
+        };
+
+        window.loadSales = async () => {
+            const container = document.getElementById('sales-container');
+            container.innerHTML = '<div class="p-10 text-center"><i data-lucide="loader" class="w-8 h-8 animate-spin mx-auto text-gold-text"></i></div>';
+            lucide.createIcons();
+            try {
+                const q = query(salesRef, orderBy("timestamp", "desc"));
+                const snap = await getDocs(q);
+                if (snap.empty) {
+                    container.innerHTML = '<p class="text-center p-10 text-zinc-500">No hay ventas hoy.</p>';
+                    return;
+                }
+                let html = '<table class="w-full text-left text-sm"><thead><tr class="text-zinc-500 border-b border-zinc-800"><th class="p-4">Fecha/Hora</th><th class="p-4">Items</th><th class="p-4">Métodos</th><th class="p-4 text-right">Total</th></tr></thead><tbody>';
+                snap.forEach(doc => {
+                    const s = doc.data();
+                    html += `<tr class="border-b border-zinc-900">
+                        <td class="p-4 font-mono text-xs">${new Date(s.timestamp).toLocaleString()}</td>
+                        <td class="p-4 text-zinc-400">${s.items.map(i => `${i.name} (x${i.qty})`).join(', ')}</td>
+                        <td class="p-4"><span class="text-[10px] bg-zinc-800 px-2 py-1 rounded text-zinc-300">${s.methods.join(' / ')}</span></td>
+                        <td class="p-4 text-right font-bold text-gold-text">$${s.total.toFixed(2)}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando ventas.</p>'; }
+        };
+
+        window.openPasswordModal = (action) => {
+            pendingAction = action;
+            document.getElementById('modal-password').classList.add('active-modal');
+            document.getElementById('pass-input').value = '';
+            document.getElementById('pass-input').focus();
+        };
+
+        window.checkPassword = () => {
+            if (document.getElementById('pass-input').value === PASS_MANAGEMENT) {
+                document.getElementById('modal-password').classList.remove('active-modal');
+                window.showView(pendingAction);
+                if (pendingAction === 'sales') loadSales();
+            } else { showToast("Clave incorrecta", "error"); }
+        };
+
+        window.applyFilters = () => {
+            const search = document.getElementById('f-search').value.toLowerCase();
+            const cat = document.getElementById('f-cat').value;
+            const filtered = stock.filter(p => {
+                const matchSearch = p.name.toLowerCase().includes(search) || p.barcode.includes(search);
+                const matchCat = cat === '' || p.category === cat;
+                return matchSearch && matchCat;
+            });
+            document.getElementById('stock-table-container').classList.remove('hidden');
+            renderStockTable(filtered);
+        };
+
+        function renderStockTable(data) {
+            const body = document.getElementById('stock-table-body');
+            body.innerHTML = data.map(p => `
+                <tr class="border-b border-zinc-800 hover:bg-zinc-900/50">
+                    <td class="p-3 text-xs font-mono">${p.barcode}</td>
+                    <td class="p-3 font-semibold">${p.name}</td>
+                    <td class="p-3 text-xs capitalize">${p.category}</td>
+                    <td class="p-3 font-bold">${p.quantity}</td>
+                    <td class="p-3 text-xs text-zinc-500">${p.size} / ${p.color}</td>
+                    <td class="p-3 text-gold-text font-bold">$${p.price.toFixed(2)}</td>
+                    <td class="p-3 flex gap-2">
+                        <button onclick="openEditModal('${p.id}')" class="p-2 text-blue-400 hover:bg-blue-400/10 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                        <button onclick="deleteProduct('${p.id}')" class="p-2 text-red-500 hover:bg-red-500/10 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        window.saveNewItem = async () => {
+            const data = {
+                barcode: document.getElementById('ni-barcode').value,
+                name: document.getElementById('ni-name').value,
+                category: document.getElementById('ni-category').value,
+                quantity: parseInt(document.getElementById('ni-qty').value) || 0,
+                size: document.getElementById('ni-size').value,
+                color: document.getElementById('ni-color').value,
+                price: parseFloat(document.getElementById('ni-price').value) || 0
+            };
+            if (!data.barcode || !data.name) return showToast("Faltan datos obligatorios", "error");
+            try {
+                await addDoc(productsRef, data);
+                showToast("Producto Guardado en Inventario", "success");
+                window.showView('inventory');
+            } catch (err) { showToast("Error al guardar producto", "error"); }
+        };
+
+        window.deleteProduct = async (id) => {
+            if (!confirm("¿Seguro que desea eliminar este producto?")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`, id));
+                showToast("Producto Eliminado", "success");
+                applyFilters();
+            } catch (e) { showToast("Error al eliminar", "error"); }
+        };
+
+        window.openEditModal = (id) => {
+            const p = stock.find(item => item.id === id);
+            if (!p) return;
+            editingProductId = id;
+            document.getElementById('ed-name').value = p.name;
+            document.getElementById('ed-qty').value = p.quantity;
+            document.getElementById('ed-price').value = p.price;
+            document.getElementById('modal-edit').classList.add('active-modal');
+        };
+
+        window.updateProduct = async () => {
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`, editingProductId), {
+                    name: document.getElementById('ed-name').value,
+                    quantity: parseInt(document.getElementById('ed-qty').value),
+                    price: parseFloat(document.getElementById('ed-price').value)
+                });
+                showToast("Stock Actualizado", "success");
+                document.getElementById('modal-edit').classList.remove('active-modal');
+                applyFilters();
+            } catch (e) { showToast("Error al actualizar", "error"); }
+        };
+
+        window.loadExpenses = async () => {
+            const container = document.getElementById('expenses-container');
+            try {
+                const snap = await getDocs(expensesRef);
+                container.innerHTML = snap.empty ? '<p class="text-center p-10 text-zinc-500">Sin gastos hoy.</p>' : snap.docs.map(doc => {
+                    const e = doc.data();
+                    return `<div class="flex justify-between p-4 border-b border-zinc-800"><span>${e.description}</span><span class="text-red-400">-$${e.amount}</span></div>`;
+                }).join('');
+            } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando gastos.</p>'; }
+        };
+
+        window.loadIncidents = async () => {
+            const container = document.getElementById('incidents-container');
+            try {
+                const snap = await getDocs(incidentsRef);
+                container.innerHTML = snap.empty ? '<p class="text-center p-10 text-zinc-500">Sin incidencias hoy.</p>' : snap.docs.map(doc => {
+                    const i = doc.data();
+                    return `<div class="p-4 border-b border-zinc-800"><p class="text-orange-400 font-bold">${i.type}</p><p class="text-xs text-zinc-400">${i.details}</p></div>`;
+                }).join('');
+            } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando incidencias.</p>'; }
+        };
+
+        function showToast(m, t) {
+            const div = document.createElement('div');
+            div.className = `fixed top-10 right-10 p-5 rounded-2xl z-[1000] font-bold shadow-2xl transition-all animate-bounce ${t === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
+            div.innerText = m;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 3000);
+        }
+
+        window.onload = () => lucide.createIcons();
+    </script>
+
+    <div id="view-login" class="min-h-screen flex items-center justify-center p-6">
+        <div class="glass-card p-12 rounded-[2rem] max-w-4xl w-full flex flex-col md:flex-row gap-12 border-t-8 border-[#c5a059] shadow-2xl">
+            <div class="md:w-1/2 text-center space-y-8">
+                <img src="logo.ico" alt="Logo" class="w-56 mx-auto rounded-full border-4 border-[#c5a059] shadow-lg" onerror="this.src='https://placehold.co/200x200/1a1a1a/c5a059?text=G%26G'">
+                <div>
+                    <h1 class="text-4xl font-black gold-text tracking-tighter uppercase">G&G SHOPPING</h1>
+                    <p class="text-zinc-500 font-light mt-2 uppercase tracking-widest">Sistema Premium</p>
+                </div>
+            </div>
+            <div class="md:w-1/2 space-y-6 flex flex-col justify-center">
+                <div class="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800 space-y-4">
+                    <label class="text-xs font-bold uppercase text-zinc-600 tracking-widest">Tienda Sucursal 1</label>
+                    <div class="password-container">
+                        <input type="password" id="store-pass-1" placeholder="Ingrese Clave..." class="w-full p-3 pr-12 text-center">
+                        <span class="password-toggle" onclick="togglePassword('store-pass-1', 'eye-1')">
+                            <i id="eye-1" data-lucide="eye" class="w-5 h-5"></i>
+                        </span>
+                    </div>
+                    <button onclick="selectStore(1)" class="w-full gold-gradient py-3 rounded-xl font-black text-black btn-hover">ACCEDER SUCURSAL 1</button>
+                </div>
+                <div class="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800 space-y-4">
+                    <label class="text-xs font-bold uppercase text-zinc-600 tracking-widest">Tienda Sucursal 2</label>
+                    <div class="password-container">
+                        <input type="password" id="store-pass-2" placeholder="Ingrese Clave..." class="w-full p-3 pr-12 text-center">
+                        <span class="password-toggle" onclick="togglePassword('store-pass-2', 'eye-2')">
+                            <i id="eye-2" data-lucide="eye" class="w-5 h-5"></i>
+                        </span>
+                    </div>
+                    <button onclick="selectStore(2)" class="w-full gold-gradient py-3 rounded-xl font-black text-black btn-hover">ACCEDER SUCURSAL 2</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-main" class="hidden min-h-screen p-8">
+        <header class="flex justify-between items-center mb-12 max-w-6xl mx-auto">
+            <div class="flex items-center gap-5">
+                <div class="w-14 h-14 rounded-full border-2 border-gold-text overflow-hidden bg-black"><img src="logo.ico" class="w-full h-full object-contain"></div>
+                <div>
+                    <h2 id="store-name-display" class="text-2xl font-black gold-text">G&G</h2>
+                    <p class="text-xs text-zinc-500 uppercase tracking-widest">Dashboard Principal</p>
+                </div>
+            </div>
+            <button onclick="location.reload()" class="bg-zinc-900 text-zinc-400 border border-zinc-800 px-6 py-2 rounded-xl text-xs font-bold hover:text-white">SALIR</button>
+        </header>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <button onclick="openPasswordModal('sales')" class="glass-card p-10 rounded-[2rem] flex flex-col items-center gap-6 btn-hover">
+                <div class="p-5 bg-blue-500/10 rounded-2xl text-blue-400"><i data-lucide="trending-up" class="w-8 h-8"></i></div>
+                <span class="font-bold tracking-tight text-lg uppercase">1. Ventas</span>
+            </button>
+            <button onclick="openPasswordModal('inventory')" class="glass-card p-10 rounded-[2rem] flex flex-col items-center gap-6 btn-hover">
+                <div class="p-5 bg-emerald-500/10 rounded-2xl text-emerald-400"><i data-lucide="package" class="w-8 h-8"></i></div>
+                <span class="font-bold tracking-tight text-lg uppercase">2. Inventario</span>
+            </button>
+            <button onclick="showView('incidents'); loadIncidents();" class="glass-card p-10 rounded-[2rem] flex flex-col items-center gap-6 btn-hover">
+                <div class="p-5 bg-orange-500/10 rounded-2xl text-orange-400"><i data-lucide="alert-triangle" class="w-8 h-8"></i></div>
+                <span class="font-bold tracking-tight text-lg uppercase">3. Incidencias</span>
+            </button>
+            <button onclick="showView('pos')" class="glass-card p-10 rounded-[2rem] flex flex-col items-center gap-6 btn-hover border-[#c5a059]/40 border-2">
+                <div class="p-5 bg-purple-500/10 rounded-2xl text-purple-400"><i data-lucide="shopping-bag" class="w-8 h-8"></i></div>
+                <span class="font-black tracking-tight text-lg gold-text uppercase">4. Tienda POS</span>
+            </button>
+            <button onclick="showView('expenses'); loadExpenses();" class="glass-card p-10 rounded-[2rem] flex flex-col items-center gap-6 btn-hover">
+                <div class="p-5 bg-red-500/10 rounded-2xl text-red-400"><i data-lucide="dollar-sign" class="w-8 h-8"></i></div>
+                <span class="font-bold tracking-tight text-lg uppercase">5. Gastos</span>
+            </button>
+            <button onclick="showView('closing')" class="glass-card p-10 rounded-[2rem] flex flex-col items-center gap-6 btn-hover">
+                <div class="p-5 bg-zinc-500/10 rounded-2xl text-zinc-500"><i data-lucide="lock" class="w-8 h-8"></i></div>
+                <span class="font-bold tracking-tight text-lg text-zinc-500 uppercase">6. Cierre Caja</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="view-pos" class="hidden p-8 max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-black gold-text">PUNTO DE VENTA</h2>
+            <button onclick="showView('main')" class="bg-zinc-900 px-6 py-2 rounded-xl border border-zinc-800">VOLVER</button>
+        </div>
+        <div class="grid lg:grid-cols-3 gap-8">
+            <div class="space-y-6">
+                <div class="glass-card p-8 rounded-3xl space-y-4">
+                    <input type="text" id="pos-scanner" placeholder="Escanear Código..." class="w-full p-4 font-mono uppercase" onkeypress="if(event.key==='Enter') addToCart()">
+                    <select id="pos-manual-select" class="w-full p-4" onchange="addToCart(this.value)">
+                        <option value="">-- BUSCAR MANUALMENTE --</option>
+                    </select>
+                </div>
+                <div class="glass-card p-8 rounded-3xl">
+                    <h3 class="text-xs font-bold uppercase text-zinc-500 mb-5">Descuento aplicado</h3>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button onclick="setDiscount(5)" data-pct="5" class="discount-btn">5%</button>
+                        <button onclick="setDiscount(10)" data-pct="10" class="discount-btn">10%</button>
+                        <button onclick="setDiscount(15)" data-pct="15" class="discount-btn">15%</button>
+                        <button onclick="setDiscount(20)" data-pct="20" class="discount-btn">20%</button>
+                        <button onclick="setDiscount(0)" data-pct="0" class="discount-btn active">0%</button>
+                    </div>
+                </div>
+                <div class="glass-card p-8 rounded-3xl">
+                    <h3 class="text-xs font-bold uppercase text-zinc-500 mb-5">Métodos de pago</h3>
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <label class="flex items-center gap-2 bg-zinc-900 p-3 rounded-xl border border-zinc-800"><input type="checkbox" id="pay-usd"> USD</label>
+                        <label class="flex items-center gap-2 bg-zinc-900 p-3 rounded-xl border border-zinc-800"><input type="checkbox" id="pay-cash"> EFECTIVO</label>
+                        <label class="flex items-center gap-2 bg-zinc-900 p-3 rounded-xl border border-zinc-800"><input type="checkbox" id="pay-mobile"> PAGO MÓVIL</label>
+                        <label class="flex items-center gap-2 bg-zinc-900 p-3 rounded-xl border border-zinc-800"><input type="checkbox" id="pay-zelle"> ZELLE</label>
+                    </div>
+                </div>
+            </div>
+            <div class="lg:col-span-2 glass-card p-8 rounded-[2.5rem] flex flex-col min-h-[600px]">
+                <div id="cart-items" class="flex-1 overflow-y-auto mb-8"></div>
+                <div class="bg-zinc-900/50 p-8 rounded-3xl border border-zinc-800">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-xs text-zinc-500 font-bold uppercase tracking-widest">Total a pagar</p>
+                            <h3 class="text-5xl font-black gold-text">$<span id="cart-total">0.00</span></h3>
+                            <p class="text-xs text-zinc-600 mt-2">SUBTOTAL: $<span id="cart-subtotal">0.00</span> | DCTO: $<span id="cart-discount-val">0.00</span></p>
+                        </div>
+                        <button onclick="finishSale()" class="gold-gradient text-black px-12 py-5 rounded-2xl font-black text-xl btn-hover shadow-xl">FACTURAR</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-inventory" class="hidden p-8 max-w-4xl mx-auto">
+        <h2 class="text-3xl font-black gold-text mb-10 text-center uppercase">GESTIÓN DE INVENTARIO</h2>
+        <div class="grid grid-cols-2 gap-8">
+            <button onclick="showView('stock')" class="glass-card p-12 rounded-[2rem] flex flex-col items-center gap-5 btn-hover">
+                <i data-lucide="clipboard-list" class="w-10 h-10 text-emerald-400"></i>
+                <span class="text-xl font-bold uppercase">CONSULTAR STOCK</span>
+            </button>
+            <button onclick="showView('create-item')" class="glass-card p-12 rounded-[2rem] flex flex-col items-center gap-5 btn-hover">
+                <i data-lucide="plus-circle" class="w-10 h-10 text-blue-400"></i>
+                <span class="text-xl font-bold uppercase">NUEVA PRENDA</span>
+            </button>
+        </div>
+        <div class="mt-12 text-center"><button onclick="showView('main')" class="bg-zinc-900 px-10 py-3 rounded-xl border border-zinc-800 text-zinc-400 uppercase font-bold">VOLVER AL PANEL</button></div>
+    </div>
+
+    <div id="view-create-item" class="hidden p-8 max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <h2 class="text-3xl font-black gold-text uppercase">AÑADIR PRENDA</h2>
+            <button onclick="showView('inventory')" class="bg-zinc-900 px-6 py-2 rounded-xl border border-zinc-800">VOLVER</button>
+        </div>
+        
+        <div class="glass-card p-10 rounded-[2.5rem] shadow-2xl border-t-4 border-blue-500">
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-zinc-500 uppercase">Código de Barras</label>
+                    <input type="text" id="ni-barcode" placeholder="Escanee o escriba..." class="w-full p-4 font-mono">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-zinc-500 uppercase">Nombre del Producto</label>
+                    <input type="text" id="ni-name" placeholder="Ej: Franela Oversize" class="w-full p-4">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-zinc-500 uppercase">Categoría</label>
+                    <select id="ni-category" class="w-full p-4">
+                        <option value="franelas">Franelas</option>
+                        <option value="pantalones">Pantalones</option>
+                        <option value="bermudas">Bermudas</option>
+                        <option value="zapatos">Zapatos</option>
+                        <option value="perfumes">Perfumes</option>
+                        <option value="accesorios">Accesorios</option>
+                        <option value="otros">Otros</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-zinc-500 uppercase">Stock Inicial</label>
+                    <input type="number" id="ni-qty" placeholder="0" class="w-full p-4">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-zinc-500 uppercase">Talla / Tamaño</label>
+                    <input type="text" id="ni-size" placeholder="S, M, L, XL, 100ml..." class="w-full p-4">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-zinc-500 uppercase">Color / Variante</label>
+                    <input type="text" id="ni-color" placeholder="Negro, Azul, Unico..." class="w-full p-4">
+                </div>
+                <div class="md:col-span-2 space-y-2">
+                    <label class="text-xs font-bold text-zinc-500 uppercase">Precio de Venta ($)</label>
+                    <input type="number" step="0.01" id="ni-price" placeholder="0.00" class="w-full p-6 text-2xl font-black text-gold-text">
+                </div>
+            </div>
+            
+            <div class="mt-10">
+                <button onclick="saveNewItem()" class="w-full gold-gradient py-5 rounded-2xl text-black font-black text-xl btn-hover shadow-lg">
+                    GUARDAR PRODUCTO
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-stock" class="hidden p-8 max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-black gold-text uppercase">CONTROL DE STOCK</h2>
+            <button onclick="showView('inventory')" class="bg-zinc-900 px-6 py-2 rounded-xl border border-zinc-800 text-zinc-400 font-bold hover:text-white transition-colors">VOLVER</button>
+        </div>
+
+        <div class="glass-card p-8 rounded-3xl mb-8 grid md:grid-cols-4 gap-4 items-end">
+            <div class="col-span-2">
+                <label class="text-[10px] text-zinc-500 font-bold ml-1 uppercase tracking-widest">Buscar por nombre o código</label>
+                <input type="text" id="f-search" placeholder="Escriba..." class="w-full p-3 mt-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white">
+            </div>
+            <div>
+                <label class="text-[10px] text-zinc-500 font-bold ml-1 uppercase tracking-widest">Categoría</label>
+                <select id="f-cat" class="w-full p-3 mt-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white">
+                    <option value="">TODAS</option>
+                    <option value="franelas">Franelas</option>
+                    <option value="pantalones">Pantalones</option>
+                    <option value="bermudas">Bermudas</option>
+                    <option value="zapatos">Zapatos</option>
+                    <option value="perfumes">Perfumes</option>
+                    <option value="accesorios">Accesorios</option>
+                    <option value="otros">Otros</option>
+                </select>
+            </div>
+            <button onclick="applyFilters()" class="gold-gradient py-3 rounded-xl text-black font-black btn-hover shadow-lg uppercase text-sm">FILTRAR</button>
+        </div>
+
+        <div id="stock-table-container" class="glass-card rounded-[2rem] overflow-hidden hidden shadow-2xl">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-zinc-900 text-zinc-500 text-[10px] uppercase font-black tracking-widest">
+                        <tr>
+                            <th class="p-5">CÓDIGO</th>
+                            <th class="p-5">PRENDA</th>
+                            <th class="p-5">CAT.</th>
+                            <th class="p-5">STOCK</th>
+                            <th class="p-5">DETALLE (T/C)</th>
+                            <th class="p-5">PRECIO</th>
+                            <th class="p-5">ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-body" class="text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-sales" class="hidden p-8 max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <h2 class="text-3xl font-black gold-text uppercase">REPORTE DE VENTAS</h2>
+            <button onclick="showView('main')" class="bg-zinc-900 px-6 py-2 rounded-xl border border-zinc-800">VOLVER</button>
+        </div>
+        <div id="sales-container" class="glass-card rounded-[2rem] overflow-hidden min-h-[300px]"></div>
+    </div>
+
+    <div id="view-expenses" class="hidden p-8 max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <h2 class="text-3xl font-black text-red-400 uppercase">EGRESOS / GASTOS</h2>
+            <button onclick="showView('main')" class="bg-zinc-900 px-6 py-2 rounded-xl border border-zinc-800">VOLVER</button>
+        </div>
+        <div id="expenses-container" class="glass-card rounded-[2rem] p-8 min-h-[300px]"></div>
+    </div>
+
+    <div id="view-incidents" class="hidden p-8 max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <h2 class="text-3xl font-black text-orange-400 uppercase">INCIDENCIAS</h2>
+            <button onclick="showView('main')" class="bg-zinc-900 px-6 py-2 rounded-xl border border-zinc-800">VOLVER</button>
+        </div>
+        <div id="incidents-container" class="glass-card rounded-[2rem] p-8 min-h-[300px]"></div>
+    </div>
+
+    <div id="view-closing" class="hidden p-8 max-w-5xl mx-auto text-center">
+        <h2 class="text-3xl font-black text-zinc-500 mb-8 uppercase">CIERRE DE CAJA</h2>
+        <div class="glass-card p-12 rounded-[2rem] border-dashed border-2 border-zinc-800">
+            <i data-lucide="lock" class="w-16 h-16 text-zinc-800 mx-auto mb-6"></i>
+            <h3 class="text-xl font-bold text-zinc-400">MODULO EN DESARROLLO</h3>
+            <p class="text-zinc-500 mb-8 mt-2">Esta función se activará en la próxima actualización.</p>
+            <button onclick="showView('main')" class="bg-zinc-900 px-10 py-3 rounded-xl border border-zinc-800">VOLVER</button>
+        </div>
+    </div>
+
+    <div id="modal-password" class="modal">
+        <div class="glass-card p-10 rounded-[2.5rem] max-w-sm w-full border-t-4 border-gold-text">
+            <div class="text-center mb-6">
+                <i data-lucide="shield-check" class="w-10 h-10 text-gold-text mx-auto mb-3"></i>
+                <h3 class="text-xl font-black gold-text uppercase">ACCESO ADMIN</h3>
+            </div>
+            <div class="password-container mb-6">
+                <input type="password" id="pass-input" class="w-full p-4 pr-12 text-center text-xl font-black" placeholder="••••" onkeypress="if(event.key==='Enter') checkPassword()">
+                <span class="password-toggle" onclick="togglePassword('pass-input', 'eye-admin')">
+                    <i id="eye-admin" data-lucide="eye" class="w-5 h-5"></i>
+                </span>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('modal-password').classList.remove('active-modal')" class="flex-1 bg-zinc-900 py-3 rounded-xl uppercase font-bold text-xs">Cancelar</button>
+                <button onclick="checkPassword()" class="flex-1 gold-gradient text-black py-3 rounded-xl font-black uppercase text-xs">Entrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-edit" class="modal">
+        <div class="glass-card p-8 rounded-[2rem] max-w-md w-full">
+            <h3 class="text-xl font-bold gold-text mb-6 uppercase">Editar Stock</h3>
+            <div class="space-y-4">
+                <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Nombre</label><input type="text" id="ed-name" class="w-full p-3 mt-1"></div>
+                <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Stock Actual</label><input type="number" id="ed-qty" class="w-full p-3 mt-1"></div>
+                <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Precio ($)</label><input type="number" step="0.01" id="ed-price" class="w-full p-3 mt-1"></div>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button onclick="document.getElementById('modal-edit').classList.remove('active-modal')" class="flex-1 bg-zinc-900 py-3 rounded-xl">Cerrar</button>
+                <button onclick="updateProduct()" class="flex-1 gold-gradient text-black py-3 rounded-xl font-black">ACTUALIZAR</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
