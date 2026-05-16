@@ -212,56 +212,61 @@
         };
 
         window.finishSale = async () => {
-            if (cart.length === 0) return showToast("El carrito está vacío", "error");
-            
-            const paymentDetails = [];
-            const checkMap = { 'usd': 'USD', 'cash': 'Efectivo', 'mobile': 'P. Móvil', 'zelle': 'Zelle' };
-            
-            Object.keys(checkMap).forEach(key => {
-                if (document.getElementById(`pay-${key}`).checked) {
-                    const val = parseFloat(document.getElementById(`amt-${key}`).value) || 0;
-                    if (val > 0) paymentDetails.push({ method: checkMap[key], amount: val });
-                }
-            });
+    if (cart.length === 0) return showToast("El carrito está vacío", "error");
+    
+    const paymentDetails = [];
+    const checkMap = { 
+        'usd': 'USD', 
+        'cash': 'Efectivo BS', 
+        'mobile': 'P. Móvil BS', 
+        'zelle': 'Zelle' 
+    };
+    
+    Object.keys(checkMap).forEach(key => {
+        if (document.getElementById(`pay-${key}`).checked) {
+            const val = parseFloat(document.getElementById(`amt-${key}`).value) || 0;
+            if (val > 0) paymentDetails.push({ method: checkMap[key], amount: val });
+        }
+    });
 
-            if (paymentDetails.length === 0) return showToast("Ingrese montos en los métodos seleccionados", "error");
+    if (paymentDetails.length === 0) return showToast("Ingrese montos en los métodos seleccionados", "error");
 
-            const totalFactura = parseFloat(document.getElementById('cart-total').innerText);
-            const totalPagado = paymentDetails.reduce((acc, p) => acc + p.amount, 0);
+    const totalFactura = parseFloat(document.getElementById('cart-total').innerText);
 
-            // Verificación de cuadre (margen de error de 0.01 por decimales)
-            if (Math.abs(totalPagado - totalFactura) > 0.01) {
-                return showToast(`Monto pagado ($${totalPagado.toFixed(2)}) no coincide con total ($${totalFactura.toFixed(2)})`, "error");
+    try {
+        await addDoc(salesRef, { 
+            total: totalFactura, 
+            date: new Date().toLocaleDateString(), 
+            timestamp: new Date().toISOString(), 
+            payments: paymentDetails,
+            items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price }))
+        });
+        
+        for (let item of cart) {
+            const prod = stock.find(p => p.barcode === item.barcode);
+            if (prod) {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`, prod.id), {
+                    quantity: prod.quantity - item.qty
+                });
             }
+        }
 
-            try {
-                await addDoc(salesRef, { 
-                    total: totalFactura, 
-                    date: new Date().toLocaleDateString(), 
-                    timestamp: new Date().toISOString(), 
-                    payments: paymentDetails,
-                    items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price }))
-                });
-                
-                for (let item of cart) {
-                    const prod = stock.find(p => p.barcode === item.barcode);
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`, prod.id), {
-                        quantity: prod.quantity - item.qty
-                    });
-                }
-
-                showToast("Venta Registrada Exitosamente", "success");
-                cart = [];
-                window.setDiscount(0);
-                // Limpiar cheques e inputs
-                Object.keys(checkMap).forEach(key => {
-                    document.getElementById(`pay-${key}`).checked = false;
-                    document.getElementById(`amt-${key}`).value = '';
-                    document.getElementById(`amt-${key}`).disabled = true;
-                });
-                renderCart();
-            } catch(e) { showToast("Error al guardar la venta", "error"); }
-        };
+        showToast("Venta Registrada Exitosamente", "success");
+        cart = [];
+        window.setDiscount(0);
+        
+        // Limpiar cheques e inputs
+        Object.keys(checkMap).forEach(key => {
+            document.getElementById(`pay-${key}`).checked = false;
+            document.getElementById(`amt-${key}`).value = '';
+            document.getElementById(`amt-${key}`).disabled = true;
+        });
+        renderCart();
+    } catch(e) { 
+        console.error(e);
+        showToast("Error al guardar la venta", "error"); 
+    }
+};
 
         window.loadSales = async () => {
             const container = document.getElementById('sales-container');
@@ -525,34 +530,34 @@
                     </div>
                 </div>
                <div class="glass-card p-8 rounded-3xl">
-                    <h3 class="text-xs font-bold uppercase text-zinc-500 mb-5">Métodos de pago y cantidades</h3>
-                    <div class="space-y-3 text-[10px]">
-                        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
-                            <label class="flex items-center gap-2 w-24 cursor-pointer">
-                                <input type="checkbox" id="pay-usd" onchange="document.getElementById('amt-usd').disabled = !this.checked"> USD
-                            </label>
-                            <input type="number" id="amt-usd" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
-                        </div>
-                        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
-                            <label class="flex items-center gap-2 w-24 cursor-pointer">
-                                <input type="checkbox" id="pay-cash" onchange="document.getElementById('amt-cash').disabled = !this.checked"> EFECTIVO
-                            </label>
-                            <input type="number" id="amt-cash" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
-                        </div>
-                        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
-                            <label class="flex items-center gap-2 w-24 cursor-pointer">
-                                <input type="checkbox" id="pay-mobile" onchange="document.getElementById('amt-mobile').disabled = !this.checked"> P. MÓVIL
-                            </label>
-                            <input type="number" id="amt-mobile" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
-                        </div>
-                        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
-                            <label class="flex items-center gap-2 w-24 cursor-pointer">
-                                <input type="checkbox" id="pay-zelle" onchange="document.getElementById('amt-zelle').disabled = !this.checked"> ZELLE
-                            </label>
-                            <input type="number" id="amt-zelle" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
-                        </div>
-                    </div>
-                </div>
+    <h3 class="text-xs font-bold uppercase text-zinc-500 mb-5">Métodos de pago y cantidades</h3>
+    <div class="space-y-3 text-[10px]">
+        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
+            <label class="flex items-center gap-2 w-24 cursor-pointer">
+                <input type="checkbox" id="pay-usd" onchange="document.getElementById('amt-usd').disabled = !this.checked"> USD
+            </label>
+            <input type="number" id="amt-usd" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
+        </div>
+        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
+            <label class="flex items-center gap-2 w-24 cursor-pointer">
+                <input type="checkbox" id="pay-cash" onchange="document.getElementById('amt-cash').disabled = !this.checked"> EFECTIVO BS
+            </label>
+            <input type="number" id="amt-cash" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
+        </div>
+        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
+            <label class="flex items-center gap-2 w-24 cursor-pointer">
+                <input type="checkbox" id="pay-mobile" onchange="document.getElementById('amt-mobile').disabled = !this.checked"> P. MÓVIL BS
+            </label>
+            <input type="number" id="amt-mobile" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
+        </div>
+        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
+            <label class="flex items-center gap-2 w-24 cursor-pointer">
+                <input type="checkbox" id="pay-zelle" onchange="document.getElementById('amt-zelle').disabled = !this.checked"> ZELLE
+            </label>
+            <input type="number" id="amt-zelle" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
+        </div>
+    </div>
+</div>
             </div>
             <div class="lg:col-span-2 glass-card p-8 rounded-[2.5rem] flex flex-col min-h-[600px]">
                 <div id="cart-items" class="flex-1 overflow-y-auto mb-8"></div>
