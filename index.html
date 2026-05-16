@@ -212,61 +212,72 @@
         };
 
         window.finishSale = async () => {
-    if (cart.length === 0) return showToast("El carrito está vacío", "error");
-    
-    const paymentDetails = [];
-    const checkMap = { 
-        'usd': 'USD', 
-        'cash': 'Efectivo BS', 
-        'mobile': 'P. Móvil BS', 
-        'zelle': 'Zelle' 
-    };
-    
-    Object.keys(checkMap).forEach(key => {
-        if (document.getElementById(`pay-${key}`).checked) {
-            const val = parseFloat(document.getElementById(`amt-${key}`).value) || 0;
-            if (val > 0) paymentDetails.push({ method: checkMap[key], amount: val });
-        }
-    });
+            if (cart.length === 0) return showToast("El carrito está vacío", "error");
+            
+            const paymentDetails = [];
+            const checkMap = { 
+                'usd': 'USD', 
+                'cash': 'Efectivo BS', 
+                'mobile': 'P. Móvil BS', 
+                'zelle': 'Zelle' 
+            };
+            
+            Object.keys(checkMap).forEach(key => {
+                if (document.getElementById(`pay-${key}`).checked) {
+                    const val = parseFloat(document.getElementById(`amt-${key}`).value) || 0;
+                    if (val > 0) paymentDetails.push({ method: checkMap[key], amount: val });
+                }
+            });
 
-    if (paymentDetails.length === 0) return showToast("Ingrese montos en los métodos seleccionados", "error");
+            if (paymentDetails.length === 0) return showToast("Ingrese montos en los métodos seleccionados", "error");
 
-    const totalFactura = parseFloat(document.getElementById('cart-total').innerText);
+            const totalFactura = parseFloat(document.getElementById('cart-total').innerText);
 
-    try {
-        await addDoc(salesRef, { 
-            total: totalFactura, 
-            date: new Date().toLocaleDateString(), 
-            timestamp: new Date().toISOString(), 
-            payments: paymentDetails,
-            items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price }))
-        });
-        
-        for (let item of cart) {
-            const prod = stock.find(p => p.barcode === item.barcode);
-            if (prod) {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`, prod.id), {
-                    quantity: prod.quantity - item.qty
+            try {
+                // 1. Verificación de stock antes de procesar para evitar negativos
+                for (let item of cart) {
+                    const prod = stock.find(p => p.barcode === item.barcode);
+                    if (!prod || prod.quantity < item.qty) {
+                        return showToast(`Stock insuficiente para: ${item.name}`, "error");
+                    }
+                }
+
+                // 2. Registro de la venta en Firebase
+                await addDoc(salesRef, { 
+                    total: totalFactura, 
+                    date: new Date().toLocaleDateString(), 
+                    timestamp: new Date().toISOString(), 
+                    payments: paymentDetails,
+                    items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price }))
                 });
-            }
-        }
+                
+                // 3. Actualización de stock (asegurando que el mínimo sea 0)
+                for (let item of cart) {
+                    const prod = stock.find(p => p.barcode === item.barcode);
+                    if (prod) {
+                        const newQty = Math.max(0, prod.quantity - item.qty); // Evita negativos
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`, prod.id), {
+                            quantity: newQty
+                        });
+                    }
+                }
 
-        showToast("Venta Registrada Exitosamente", "success");
-        cart = [];
-        window.setDiscount(0);
-        
-        // Limpiar cheques e inputs
-        Object.keys(checkMap).forEach(key => {
-            document.getElementById(`pay-${key}`).checked = false;
-            document.getElementById(`amt-${key}`).value = '';
-            document.getElementById(`amt-${key}`).disabled = true;
-        });
-        renderCart();
-    } catch(e) { 
-        console.error(e);
-        showToast("Error al guardar la venta", "error"); 
-    }
-};
+                showToast("Venta Registrada Exitosamente", "success");
+                cart = [];
+                window.setDiscount(0);
+                
+                // Limpiar cheques e inputs
+                Object.keys(checkMap).forEach(key => {
+                    document.getElementById(`pay-${key}`).checked = false;
+                    document.getElementById(`amt-${key}`).value = '';
+                    document.getElementById(`amt-${key}`).disabled = true;
+                });
+                renderCart();
+            } catch(e) { 
+                console.error(e);
+                showToast("Error al guardar la venta", "error"); 
+            }
+        };
 
         window.loadSales = async () => {
             const container = document.getElementById('sales-container');
