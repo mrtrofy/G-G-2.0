@@ -525,14 +525,14 @@
         <div class="grid lg:grid-cols-3 gap-8">
             <div class="space-y-6">
                 <div class="glass-card p-8 rounded-3xl space-y-4">
-                    <input type="text" id="pos-scanner" placeholder="Escanear Código..." class="w-full p-4 font-mono uppercase" onkeypress="if(event.key==='Enter') addToCart()">
+                    <input type="text" id="pos-scanner" placeholder="ESCANEAR CÓDIGO..." class="w-full p-4 font-mono uppercase" onkeypress="if(event.key==='Enter') addToCart()">
                     
-                    <div class="flex gap-2">
-                        <select id="pos-manual-select" class="flex-1 p-4">
+                    <div class="space-y-3">
+                        <select id="pos-manual-select" class="w-full p-4">
                             <option value="">-- BUSCAR MANUALMENTE --</option>
                         </select>
-                        <button onclick="addToCart(document.getElementById('pos-manual-select').value)" class="gold-gradient text-black px-6 rounded-xl font-black text-xs btn-hover uppercase">
-                            Añadir
+                        <button onclick="addToCart(document.getElementById('pos-manual-select').value)" class="w-full gold-gradient text-black py-3 rounded-xl font-black text-xs btn-hover uppercase shadow-lg">
+                            AÑADIR PRODUCTO SELECCIONADO
                         </button>
                     </div>
                 </div>
