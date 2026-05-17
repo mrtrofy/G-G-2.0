@@ -165,15 +165,27 @@
             const code = manualCode || document.getElementById('pos-scanner').value;
             if (!code) return;
             const product = stock.find(p => p.barcode === code);
-            if (product && product.quantity > 0) {
+            
+            if (product) {
                 const existing = cart.find(item => item.barcode === code);
-                if (existing) existing.qty += 1;
-                else cart.push({ ...product, qty: 1 });
-                renderCart();
-                document.getElementById('pos-scanner').value = '';
-                document.getElementById('pos-scanner').focus();
-            } else if (product) showToast("Sin stock disponible", "error");
-            else showToast("Producto no encontrado", "error");
+                const currentQtyInCart = existing ? existing.qty : 0;
+
+                // Verifica si sumarle uno supera el límite real de stock
+                if (currentQtyInCart + 1 <= product.quantity) {
+                    if (existing) {
+                        existing.qty += 1;
+                    } else {
+                        cart.push({ ...product, qty: 1 });
+                    }
+                    renderCart();
+                    document.getElementById('pos-scanner').value = '';
+                    document.getElementById('pos-scanner').focus();
+                } else {
+                    showToast(`Límite alcanzado: solo quedan ${product.quantity} unidades en stock`, "error");
+                }
+            } else {
+                showToast("Producto no encontrado", "error");
+            }
         };
 
         window.setDiscount = (pct) => {
