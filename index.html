@@ -471,7 +471,7 @@
 
         window.onload = () => lucide.createIcons();
 
-        // REGISTRAR INCIDENCIA MANUALMENTE
+       // REGISTRAR INCIDENCIA MANUALMENTE
         window.saveIncidencia = async () => {
             const type = document.getElementById('ni-name').value.trim();
             const details = document.getElementById('ni-desc').value.trim();
@@ -481,7 +481,7 @@
             }
 
             try {
-                // Guarda de forma segura utilizando la referencia automática de tu archivo
+                // Guarda en Firebase usando la referencia nativa de tu archivo
                 await addDoc(incidentsRef, {
                     type: type,
                     details: details,
@@ -495,7 +495,7 @@
                 document.getElementById('ni-name').value = '';
                 document.getElementById('ni-desc').value = '';
 
-                // Fuerza el refresco de la tabla derecha al instante
+                // Refrescar automáticamente tu tabla con la función original de tu código
                 if (typeof window.loadIncidents === 'function') window.loadIncidents();
             } catch (e) {
                 console.error(e);
