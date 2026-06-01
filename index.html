@@ -459,7 +459,37 @@
             } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando incidencias.</p>'; }
         };
 
-       
+       // REGISTRAR INCIDENCIA MANUALMENTE
+        window.saveIncidencia = async () => {
+            const type = document.getElementById('incident-manual-title').value.trim();
+            const details = document.getElementById('incident-manual-desc').value.trim();
+
+            if (!type || !details) {
+                return showToast("Por favor, llene todos los campos", "error");
+            }
+
+            try {
+                // Guarda en Firebase usando la referencia automática de tu archivo
+                await addDoc(incidentsRef, {
+                    type: type,
+                    details: details,
+                    date: new Date().toLocaleDateString(),
+                    timestamp: new Date().toISOString()
+                });
+
+                showToast("Incidencia Registrada", "success");
+
+                // Limpiar campos del formulario nuevo
+                document.getElementById('incident-manual-title').value = '';
+                document.getElementById('incident-manual-desc').value = '';
+
+                // Refrescar automáticamente tu tabla con la función original de tu código
+                if (typeof window.loadIncidents === 'function') window.loadIncidents();
+            } catch (e) {
+                console.error(e);
+                showToast("Error al guardar la incidencia", "error");
+            }
+        };
         
         function showToast(m, t) {
             const div = document.createElement('div');
@@ -471,37 +501,6 @@
 
         window.onload = () => lucide.createIcons();
 
-       // REGISTRAR INCIDENCIA MANUALMENTE
-        window.saveIncidencia = async () => {
-            const type = document.getElementById('ni-name').value.trim();
-            const details = document.getElementById('ni-desc').value.trim();
-
-            if (!type || !details) {
-                return showToast("Por favor, llene todos los campos", "error");
-            }
-
-            try {
-                // Guarda en Firebase usando la referencia nativa de tu archivo
-                await addDoc(incidentsRef, {
-                    type: type,
-                    details: details,
-                    date: new Date().toLocaleDateString(),
-                    timestamp: new Date().toISOString()
-                });
-
-                showToast("Incidencia Registrada", "success");
-
-                // Limpiar campos del formulario
-                document.getElementById('ni-name').value = '';
-                document.getElementById('ni-desc').value = '';
-
-                // Refrescar automáticamente tu tabla con la función original de tu código
-                if (typeof window.loadIncidents === 'function') window.loadIncidents();
-            } catch (e) {
-                console.error(e);
-                showToast("Error al guardar la incidencia", "error");
-            }
-        };
     </script>
 
     <div id="view-login" class="min-h-screen flex items-center justify-center p-6">
@@ -813,7 +812,7 @@
         <div id="expenses-container" class="glass-card rounded-[2rem] p-8 min-h-[300px]"></div>
     </div>
 
-    <div id="view-incidents" class="hidden p-8 max-w-7xl mx-auto">
+   <div id="view-incidents" class="hidden p-8 max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-10">
             <h2 class="text-3xl font-black text-orange-400 uppercase">Gestión de Incidencias</h2>
             <button onclick="showView('main')" class="bg-zinc-900 px-6 py-2 rounded-xl border border-zinc-800 font-bold text-xs uppercase btn-hover text-white">VOLVER</button>
@@ -825,11 +824,11 @@
                 <div class="space-y-3">
                     <div>
                         <label class="text-[10px] text-zinc-500 uppercase font-bold">Prenda / Artículo / Título</label>
-                        <input type="text" id="ni-name" placeholder="Ej. PANTALÓN MANCHADO..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono mt-1">
+                        <input type="text" id="incident-manual-title" placeholder="Ej. PANTALÓN MANCHADO..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono mt-1">
                     </div>
                     <div>
                         <label class="text-[10px] text-zinc-500 uppercase font-bold">Descripción del Incidente</label>
-                        <textarea id="ni-desc" placeholder="DETALLES DE LO SUCEDIDO..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase h-32 resize-none text-white mt-1"></textarea>
+                        <textarea id="incident-manual-desc" placeholder="DETALLES DE LO SUCEDIDO..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase h-32 resize-none text-white mt-1"></textarea>
                     </div>
                     <button onclick="saveIncidencia()" class="w-full gold-gradient text-black py-4 rounded-xl font-black text-xs btn-hover uppercase shadow-lg mt-2">
                         REGISTRAR INCIDENCIA
