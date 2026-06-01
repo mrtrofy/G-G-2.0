@@ -459,37 +459,7 @@
             } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando incidencias.</p>'; }
         };
 
-       // REGISTRAR INCIDENCIA MANUALMENTE
-        window.saveIncidencia = async () => {
-            const type = document.getElementById('ni-name').value.trim();
-            const details = document.getElementById('ni-desc').value.trim();
-
-            if (!type || !details) {
-                return showToast("Por favor, rellene todos los campos", "error");
-            }
-
-            try {
-                // Guarda en Firebase usando la referencia 'incidentsRef' nativa de tu archivo
-                await addDoc(incidentsRef, {
-                    type: type,
-                    details: details,
-                    date: new Date().toLocaleDateString(),
-                    timestamp: new Date().toISOString()
-                });
-
-                showToast("Incidencia Registrada", "success");
-
-                // Limpia los cuadros de texto del formulario
-                document.getElementById('ni-name').value = '';
-                document.getElementById('ni-desc').value = '';
-
-                // Refresca la tabla de incidencias de tu pantalla si la función existe
-                if (typeof window.loadIncidents === 'function') window.loadIncidents();
-            } catch (e) {
-                console.error(e);
-                showToast("Error al guardar", "error");
-            }
-        };
+       
         
         function showToast(m, t) {
             const div = document.createElement('div');
@@ -511,7 +481,7 @@
             }
 
             try {
-                // Guarda en Firebase usando la referencia automática incidentsRef de la sucursal activa
+                // Guarda de forma segura utilizando la referencia automática de tu archivo
                 await addDoc(incidentsRef, {
                     type: type,
                     details: details,
@@ -521,11 +491,11 @@
 
                 showToast("Incidencia Registrada", "success");
 
-                // Limpiar los cuadros de texto del formulario
+                // Limpiar campos del formulario
                 document.getElementById('ni-name').value = '';
                 document.getElementById('ni-desc').value = '';
 
-                // Llama al lector nativo de tu archivo para que actualice 'incidents-container' al instante
+                // Fuerza el refresco de la tabla derecha al instante
                 if (typeof window.loadIncidents === 'function') window.loadIncidents();
             } catch (e) {
                 console.error(e);
@@ -843,12 +813,36 @@
         <div id="expenses-container" class="glass-card rounded-[2rem] p-8 min-h-[300px]"></div>
     </div>
 
-    <div id="view-incidents" class="hidden p-8 max-w-5xl mx-auto">
+    <div id="view-incidents" class="hidden p-8 max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-10">
-            <h2 class="text-3xl font-black text-orange-400 uppercase">INCIDENCIAS</h2>
-            <button onclick="showView('main')" class="bg-zinc-900 px-6 py-2 rounded-xl border border-zinc-800">VOLVER</button>
+            <h2 class="text-3xl font-black text-orange-400 uppercase">Gestión de Incidencias</h2>
+            <button onclick="showView('main')" class="bg-zinc-900 px-6 py-2 rounded-xl border border-zinc-800 font-bold text-xs uppercase btn-hover">VOLVER</button>
         </div>
-        <div id="incidents-container" class="glass-card rounded-[2rem] p-8 min-h-[300px]"></div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="glass-card p-8 rounded-3xl space-y-4 h-fit">
+                <h3 class="text-xs font-bold uppercase text-zinc-500 mb-2">Nueva Incurrencia / Incidencia</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Prenda / Artículo / Título</label>
+                        <input type="text" id="ni-name" placeholder="Ej. PANTALÓN MANCHADO..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono mt-1">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Descripción del Incidente</label>
+                        <textarea id="ni-desc" placeholder="DETALLES DE LO SUCEDIDO..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase h-32 resize-none text-white mt-1"></textarea>
+                    </div>
+                    <button onclick="saveIncidencia()" class="w-full gold-gradient text-black py-4 rounded-xl font-black text-xs btn-hover uppercase shadow-lg mt-2">
+                        REGISTRAR INCIDENCIA
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 glass-card rounded-[2rem] p-8 min-h-[400px]">
+                <h3 class="text-xs font-bold uppercase text-zinc-500 mb-6">Historial de Reportes</h3>
+                <div id="incidents-container" class="overflow-x-auto">
+                    </div>
+            </div>
+        </div>
     </div>
 
     <div id="view-closing" class="hidden p-8 max-w-5xl mx-auto text-center">
