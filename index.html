@@ -500,6 +500,38 @@
         }
 
         window.onload = () => lucide.createIcons();
+
+        // REGISTRAR INCIDENCIA MANUALMENTE
+        window.saveIncidencia = async () => {
+            const type = document.getElementById('ni-name').value.trim();
+            const details = document.getElementById('ni-desc').value.trim();
+
+            if (!type || !details) {
+                return showToast("Por favor, llene todos los campos", "error");
+            }
+
+            try {
+                // Guarda en Firebase usando la referencia automática incidentsRef de la sucursal activa
+                await addDoc(incidentsRef, {
+                    type: type,
+                    details: details,
+                    date: new Date().toLocaleDateString(),
+                    timestamp: new Date().toISOString()
+                });
+
+                showToast("Incidencia Registrada", "success");
+
+                // Limpiar los cuadros de texto del formulario
+                document.getElementById('ni-name').value = '';
+                document.getElementById('ni-desc').value = '';
+
+                // Llama al lector nativo de tu archivo para que actualice 'incidents-container' al instante
+                if (typeof window.loadIncidents === 'function') window.loadIncidents();
+            } catch (e) {
+                console.error(e);
+                showToast("Error al guardar la incidencia", "error");
+            }
+        };
     </script>
 
     <div id="view-login" class="min-h-screen flex items-center justify-center p-6">
