@@ -459,7 +459,7 @@
             } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando incidencias.</p>'; }
         };
 
-        // REGISTRAR INCIDENCIA MANUALMENTE
+       // REGISTRAR INCIDENCIA MANUALMENTE
         window.saveIncidencia = async () => {
             const type = document.getElementById('ni-name').value.trim();
             const details = document.getElementById('ni-desc').value.trim();
@@ -469,7 +469,7 @@
             }
 
             try {
-                // Utiliza la referencia oficial 'incidentsRef' que ya creaste en tu archivo
+                // Guarda en Firebase usando la referencia 'incidentsRef' nativa de tu archivo
                 await addDoc(incidentsRef, {
                     type: type,
                     details: details,
@@ -479,18 +479,18 @@
 
                 showToast("Incidencia Registrada", "success");
 
-                // Limpiar campos manualmente
+                // Limpia los cuadros de texto del formulario
                 document.getElementById('ni-name').value = '';
                 document.getElementById('ni-desc').value = '';
 
-                // Refrescar la vista de incidencias de inmediato si la función existe
+                // Refresca la tabla de incidencias de tu pantalla si la función existe
                 if (typeof window.loadIncidents === 'function') window.loadIncidents();
             } catch (e) {
                 console.error(e);
                 showToast("Error al guardar", "error");
             }
         };
-
+        
         function showToast(m, t) {
             const div = document.createElement('div');
             div.className = `fixed top-10 right-10 p-5 rounded-2xl z-[1000] font-bold shadow-2xl transition-all animate-bounce ${t === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
