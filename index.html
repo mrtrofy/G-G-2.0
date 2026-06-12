@@ -530,6 +530,34 @@
                 showToast("Error al guardar", "error");
             }
         };
+        // FUNCIÓN INDEPENDIENTE PARA CALCULAR LOS GASTOS EN EL CIERRE
+        window.calcularGastosDelDiaCierre = async () => {
+            try {
+                const hoy = new Date().toLocaleDateString();
+                let totalGastos = 0;
+
+                // Consultamos la colección de gastos de la sucursal actual
+                const querySnapshot = await getDocs(expensesRef);
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // Filtramos para sumar solo los que correspondan a la fecha de hoy
+                    if (data.date === hoy) {
+                        const monto = parseFloat(data.amount) || 0;
+                        totalGastos += monto;
+                    }
+                });
+
+                // Insertamos el total sumado en el input del cierre de caja
+                const inputGastos = document.getElementById('cc-total-gastos');
+                if (inputGastos) {
+                    inputGastos.value = totalGastos.toFixed(2);
+                }
+
+            } catch (error) {
+                console.error("Error al calcular los gastos diarios:", error);
+            }
+        };
     </script>
 
     <div id="view-login" class="min-h-screen flex items-center justify-center p-6">
@@ -1031,7 +1059,6 @@
             }
         });
     </script>
-// 1. BUCLE
     <div id="loading-overlay" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
     <div class="glass-card p-10 rounded-3xl text-center border border-zinc-800">
         <i data-lucide="loader" class="w-12 h-12 text-gold-text animate-spin mx-auto mb-4"></i>
