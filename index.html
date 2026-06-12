@@ -95,7 +95,7 @@
         // 2. CLAVES DE ACCESO SEGÚN TUS INSTRUCCIONES
         const PASS_STORE1 = "Vision&Resultados.2026";
         const PASS_STORE2 = "Estrategia*Valor+Diciplina";
-        const PASS_MANAGEMENT = "MIsREyes0803!";
+        const PASS_MANAGEMENT = "MisReyes1623!";
 
         // 3. FUNCIÓN DE VISUALIZACIÓN DE CONTRASEÑA (CORREGIDA)
         window.togglePassword = (inputId, iconId) => {
@@ -1000,5 +1000,37 @@
             }
         });
     </script>
+//blucles//
+    <div id="loading-overlay" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div class="glass-card p-10 rounded-3xl text-center border border-zinc-800">
+        <i data-lucide="loader" class="w-12 h-12 text-gold-text animate-spin mx-auto mb-4"></i>
+        <h3 class="text-white font-black text-xl uppercase">Procesando...</h3>
+    </div>
+</div>
+
+<script>
+    // CONTROLADOR DE BUCLE DE CARGA
+    window.startLoadingLoop = () => {
+        const overlay = document.getElementById('loading-overlay');
+        overlay.classList.remove('hidden'); // Mostrar
+        
+        // Bloqueo de 30 segundos (30000 ms)
+        setTimeout(() => {
+            overlay.classList.add('hidden'); // Ocultar después de 30s
+            if (window.lucide) lucide.createIcons();
+        }, 30000); 
+    };
+
+    // Esto "inyecta" el bucle en tus botones sin tocar el código original
+    document.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Solo se activa si el botón no es el de "Cerrar" o "Volver"
+            if (!btn.innerText.includes('Cerrar') && !btn.innerText.includes('VOLVER')) {
+                window.startLoadingLoop();
+            }
+        });
+    });
+</script>
+//blucles//
 </body>
 </html>
