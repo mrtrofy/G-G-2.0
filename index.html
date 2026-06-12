@@ -501,31 +501,32 @@
 
         window.onload = () => lucide.createIcons();
 
-        // REGISTRAR GASTO MANUALMENTE
+        // REGISTRAR GASTO MANUALMENTE (CORREGIDO PARA TU TABLA)
         window.saveGasto = async () => {
-            const type = document.getElementById('expense-manual-title').value.trim();
-            const details = document.getElementById('expense-manual-desc').value.trim();
+            // Lee los campos del formulario
+            const title = document.getElementById('expense-manual-title').value.trim();
+            const amount = document.getElementById('expense-manual-desc').value.trim();
 
-            if (!type || !details) {
+            if (!title || !amount) {
                 return showToast("Por favor, llene todos los campos", "error");
             }
 
             try {
-                // Guarda de forma automática utilizando la referencia 'expensesRef' de tu archivo
+                // Guarda en Firebase usando los nombres exactos que tu función loadExpenses espera leer
                 await addDoc(expensesRef, {
-                    type: type,
-                    details: details,
+                    title: title,       // Mapea con e.title en tu tabla
+                    amount: amount,     // Mapea con e.amount en tu tabla
                     date: new Date().toLocaleDateString(),
                     timestamp: new Date().toISOString()
                 });
 
                 showToast("Gasto Registrado con Éxito", "success");
 
-                // Limpiar campos del formulario de gastos
+                // Limpiar campos del formulario
                 document.getElementById('expense-manual-title').value = '';
                 document.getElementById('expense-manual-desc').value = '';
 
-                // Refrescar automáticamente la tabla de egresos si existe la función nativa
+                // Refrescar automáticamente la tabla derecha
                 if (typeof window.loadExpenses === 'function') window.loadExpenses();
             } catch (e) {
                 console.error(e);
