@@ -501,20 +501,19 @@
 
         window.onload = () => lucide.createIcons();
 
-        // REGISTRAR GASTO MANUALMENTE (CORREGIDO PARA TU TABLA)
+      // REGISTRAR GASTO MANUALMENTE (CORREGIDO CON LAS PROPIEDADES NATIVAS)
         window.saveGasto = async () => {
-            // Lee los campos del formulario
-            const title = document.getElementById('expense-manual-title').value.trim();
+            const name = document.getElementById('expense-manual-title').value.trim();
             const amount = document.getElementById('expense-manual-desc').value.trim();
 
-            if (!title || !amount) {
+            if (!name || !amount) {
                 return showToast("Por favor, llene todos los campos", "error");
             }
 
             try {
-                // Guarda en Firebase usando los nombres exactos que tu función loadExpenses espera leer
+                // Guarda en Firebase usando 'name' y 'amount' para que coincida con tu tabla original
                 await addDoc(expensesRef, {
-                    title: title,       // Mapea con e.title en tu tabla
+                    name: name,         // Cambiado de 'title' a 'name' para que se vea en pantalla
                     amount: amount,     // Mapea con e.amount en tu tabla
                     date: new Date().toLocaleDateString(),
                     timestamp: new Date().toISOString()
@@ -522,11 +521,11 @@
 
                 showToast("Gasto Registrado con Éxito", "success");
 
-                // Limpiar campos del formulario
+                // Limpiar campos del formulario de gastos
                 document.getElementById('expense-manual-title').value = '';
                 document.getElementById('expense-manual-desc').value = '';
 
-                // Refrescar automáticamente la tabla derecha
+                // Refrescar automáticamente tu tabla derecha
                 if (typeof window.loadExpenses === 'function') window.loadExpenses();
             } catch (e) {
                 console.error(e);
