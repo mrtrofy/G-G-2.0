@@ -95,7 +95,7 @@
         // 2. CLAVES DE ACCESO SEGÚN TUS INSTRUCCIONES
         const PASS_STORE1 = "Vision&Resultados.2026";
         const PASS_STORE2 = "Estrategia*Valor+Diciplina";
-        const PASS_MANAGEMENT = "MIsREyes0803!";
+        const PASS_MANAGEMENT = "MisReyes1623!";
 
         // 3. FUNCIÓN DE VISUALIZACIÓN DE CONTRASEÑA (CORREGIDA)
         window.togglePassword = (inputId, iconId) => {
@@ -501,6 +501,38 @@
 
         window.onload = () => lucide.createIcons();
 
+        // REGISTRAR GASTO MANUALMENTE
+        window.saveGasto = async () => {
+            const type = document.getElementById('expense-manual-title').value.trim();
+            const details = document.getElementById('expense-manual-desc').value.trim();
+
+            if (!type || !details) {
+                return showToast("Por favor, llene todos los campos", "error");
+            }
+
+            try {
+                // Guarda de forma automática utilizando la referencia 'expensesRef' de tu archivo
+                await addDoc(expensesRef, {
+                    type: type,
+                    details: details,
+                    date: new Date().toLocaleDateString(),
+                    timestamp: new Date().toISOString()
+                });
+
+                showToast("Gasto Registrado con Éxito", "success");
+
+                // Limpiar campos del formulario de gastos
+                document.getElementById('expense-manual-title').value = '';
+                document.getElementById('expense-manual-desc').value = '';
+
+                // Refrescar automáticamente la tabla de egresos si existe la función nativa
+                if (typeof window.loadExpenses === 'function') window.loadExpenses();
+            } catch (e) {
+                console.error(e);
+                showToast("Error al guardar el gasto", "error");
+            }
+        };
+
     </script>
 
     <div id="view-login" class="min-h-screen flex items-center justify-center p-6">
@@ -804,12 +836,36 @@
         <div id="sales-container" class="glass-card rounded-[2rem] overflow-hidden min-h-[300px]"></div>
     </div>
 
-    <div id="view-expenses" class="hidden p-8 max-w-5xl mx-auto">
+    <div id="view-expenses" class="hidden p-8 max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-10">
-            <h2 class="text-3xl font-black text-red-400 uppercase">EGRESOS / GASTOS</h2>
-            <button onclick="showView('main')" class="bg-zinc-900 px-6 py-2 rounded-xl border border-zinc-800">VOLVER</button>
+            <h2 class="text-3xl font-black text-red-500 uppercase">Gestión de Gastos</h2>
+            <button onclick="showView('main')" class="bg-zinc-900 px-6 py-2 rounded-xl border border-zinc-800 font-bold text-xs uppercase btn-hover text-white">VOLVER</button>
         </div>
-        <div id="expenses-container" class="glass-card rounded-[2rem] p-8 min-h-[300px]"></div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="glass-card p-8 rounded-3xl space-y-4 h-fit">
+                <h3 class="text-xs font-bold uppercase text-zinc-500 mb-2">Nuevo Gasto / Egreso</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Concepto / Título del Gasto</label>
+                        <input type="text" id="expense-manual-title" placeholder="Ej. PAGO DE TRANSPORTE..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono mt-1">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Descripción / Detalles del Monto</label>
+                        <textarea id="expense-manual-desc" placeholder="Ej. REFRESCOS PARA EL PERSONAL $5..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase h-32 resize-none text-white mt-1"></textarea>
+                    </div>
+                    <button onclick="saveGasto()" class="w-full gold-gradient text-black py-4 rounded-xl font-black text-xs btn-hover uppercase shadow-lg mt-2">
+                        REGISTRAR GASTO
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 glass-card rounded-[2rem] p-8 min-h-[400px]">
+                <h3 class="text-xs font-bold uppercase text-zinc-500 mb-6">Historial de Egresos</h3>
+                <div id="expenses-container" class="overflow-x-auto text-zinc-300">
+                    </div>
+            </div>
+        </div>
     </div>
 
    <div id="view-incidents" class="hidden p-8 max-w-7xl mx-auto">
