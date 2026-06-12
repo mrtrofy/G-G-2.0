@@ -501,37 +501,33 @@
 
         window.onload = () => lucide.createIcons();
 
-      // REGISTRAR GASTO CON TEXTO LIBRE EN AMBOS CAMPOS
-        window.saveGasto = async () => {
-            const expenseTitle = document.getElementById('expense-manual-title').value.trim();
-            const expenseDetails = document.getElementById('expense-manual-desc').value.trim();
+      window.saveGasto = async () => {
+            const titleValue = document.getElementById('expense-manual-title').value.trim();
+            const amountValue = document.getElementById('expense-manual-desc').value.trim();
 
-            if (!expenseTitle || !expenseDetails) {
+            if (!titleValue || !amountValue) {
                 return showToast("Por favor, llene todos los campos", "error");
             }
 
             try {
-                // Guardamos la información duplicando los campos de texto
-                // Esto asegura que tu tabla nativa lo lea sin importar qué columna use
+                // Guardamos con los nombres de propiedad que tu tabla original busca
                 await addDoc(expensesRef, {
-                    title: expenseTitle,   // Primera Columna (Lectura de Script)
-                    name: expenseTitle,    // Primera Columna (Render de Tabla)
-                    amount: expenseDetails, // Segunda Columna (Pinta tu descripción abierta)
+                    title: titleValue,   // La tabla original busca 'e.title'
+                    name: titleValue,    // Por si acaso busca 'e.name'
+                    amount: amountValue, // La tabla original busca 'e.amount'
                     date: new Date().toLocaleDateString(),
                     timestamp: new Date().toISOString()
                 });
 
-                showToast("Gasto Registrado con Éxito", "success");
+                showToast("Gasto Registrado", "success");
 
-                // Limpiar campos del formulario
                 document.getElementById('expense-manual-title').value = '';
                 document.getElementById('expense-manual-desc').value = '';
 
-                // Refrescar la tabla al instante
                 if (typeof window.loadExpenses === 'function') window.loadExpenses();
             } catch (e) {
                 console.error(e);
-                showToast("Error al guardar el gasto", "error");
+                showToast("Error al guardar", "error");
             }
         };
     </script>
