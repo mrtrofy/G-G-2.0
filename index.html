@@ -501,7 +501,7 @@
 
         window.onload = () => lucide.createIcons();
 
-      // REGISTRAR GASTO MANUALMENTE (SOLUCIÓN DEFINITIVA PARA UNDEFINED)
+      // REGISTRAR GASTO MANUALMENTE
         window.saveGasto = async () => {
             const expenseTitle = document.getElementById('expense-manual-title').value.trim();
             const expenseAmount = document.getElementById('expense-manual-desc').value.trim();
@@ -511,23 +511,19 @@
             }
 
             try {
-                // Guardamos AMBAS propiedades (name y title) con el mismo valor
-                // Así garantizamos compatibilidad absoluta con cualquier versión de tu tabla
                 await addDoc(expensesRef, {
-                    title: expenseTitle,   // Satisface la lectura de datos de tu script
-                    name: expenseTitle,    // Satisface el renderizado visual en la columna
-                    amount: expenseAmount, // Mapea con e.amount para la descripción
+                    title: expenseTitle,   
+                    name: expenseTitle,    
+                    amount: expenseAmount, // Tu tabla lo renderiza en la columna de dinero
                     date: new Date().toLocaleDateString(),
                     timestamp: new Date().toISOString()
                 });
 
                 showToast("Gasto Registrado con Éxito", "success");
 
-                // Limpiar campos del formulario de gastos
                 document.getElementById('expense-manual-title').value = '';
                 document.getElementById('expense-manual-desc').value = '';
 
-                // Refrescar automáticamente tu tabla derecha
                 if (typeof window.loadExpenses === 'function') window.loadExpenses();
             } catch (e) {
                 console.error(e);
@@ -848,12 +844,12 @@
                 <h3 class="text-xs font-bold uppercase text-zinc-500 mb-2">Nuevo Gasto / Egreso</h3>
                 <div class="space-y-3">
                     <div>
-                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Concepto / Título del Gasto</label>
-                        <input type="text" id="expense-manual-title" placeholder="Ej. PAGO DE TRANSPORTE..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono mt-1">
+                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Concepto / Descripción del Gasto</label>
+                        <input type="text" id="expense-manual-title" placeholder="Ej. TRANSPORTE O COMPRA DE REFRESCOS..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono mt-1">
                     </div>
                     <div>
-                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Descripción / Detalles del Monto</label>
-                        <textarea id="expense-manual-desc" placeholder="Ej. REFRESCOS PARA EL PERSONAL $5..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase h-32 resize-none text-white mt-1"></textarea>
+                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Monto del Gasto ($)</label>
+                        <input type="number" step="0.01" id="expense-manual-desc" placeholder="Ej. 5.00 (SOLO EL NÚMERO)" class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono mt-1">
                     </div>
                     <button onclick="saveGasto()" class="w-full gold-gradient text-black py-4 rounded-xl font-black text-xs btn-hover uppercase shadow-lg mt-2">
                         REGISTRAR GASTO
