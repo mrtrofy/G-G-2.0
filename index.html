@@ -548,7 +548,7 @@
                     }
                 });
 
-                // Insertamos el total sumado en el input del cierre de caja
+                // Insertamos el total sumado en el input del caja
                 const inputGastos = document.getElementById('cc-total-gastos');
                 if (inputGastos) {
                     inputGastos.value = totalGastos.toFixed(2);
@@ -627,10 +627,10 @@
                 <div class="p-5 bg-red-500/10 rounded-2xl text-red-400"><i data-lucide="dollar-sign" class="w-8 h-8"></i></div>
                 <span class="font-bold tracking-tight text-lg uppercase">5. Gastos</span>
             </button>
-            <button onclick="showView('closing')" class="glass-card p-10 rounded-[2rem] flex flex-col items-center gap-6 btn-hover">
-                <div class="p-5 bg-zinc-500/10 rounded-2xl text-zinc-500"><i data-lucide="lock" class="w-8 h-8"></i></div>
-                <span class="font-bold tracking-tight text-lg text-zinc-500 uppercase">6. Cierre Caja</span>
-            </button>
+           <button onclick="calcularGastosDelDiaCierre(); showView('closing')" class="glass-card p-10 rounded-[2rem] flex flex-col items-center gap-6 btn-hover">
+    <div class="p-5 bg-zinc-500/10 rounded-2xl text-zinc-500"><i data-lucide="lock" class="w-8 h-8"></i></div>
+    <span class="font-bold tracking-tight text-lg text-zinc-500 uppercase">6. Cierre Caja</span>
+</button>
         </div>
     </div>
 
