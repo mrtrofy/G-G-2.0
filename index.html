@@ -501,20 +501,22 @@
 
         window.onload = () => lucide.createIcons();
 
-      // REGISTRAR GASTO MANUALMENTE (CORREGIDO CON LAS PROPIEDADES NATIVAS)
+      // REGISTRAR GASTO MANUALMENTE (SOLUCIÓN DEFINITIVA PARA UNDEFINED)
         window.saveGasto = async () => {
-            const name = document.getElementById('expense-manual-title').value.trim();
-            const amount = document.getElementById('expense-manual-desc').value.trim();
+            const expenseTitle = document.getElementById('expense-manual-title').value.trim();
+            const expenseAmount = document.getElementById('expense-manual-desc').value.trim();
 
-            if (!name || !amount) {
+            if (!expenseTitle || !expenseAmount) {
                 return showToast("Por favor, llene todos los campos", "error");
             }
 
             try {
-                // Guarda en Firebase usando 'name' y 'amount' para que coincida con tu tabla original
+                // Guardamos AMBAS propiedades (name y title) con el mismo valor
+                // Así garantizamos compatibilidad absoluta con cualquier versión de tu tabla
                 await addDoc(expensesRef, {
-                    name: name,         // Cambiado de 'title' a 'name' para que se vea en pantalla
-                    amount: amount,     // Mapea con e.amount en tu tabla
+                    title: expenseTitle,   // Satisface la lectura de datos de tu script
+                    name: expenseTitle,    // Satisface el renderizado visual en la columna
+                    amount: expenseAmount, // Mapea con e.amount para la descripción
                     date: new Date().toLocaleDateString(),
                     timestamp: new Date().toISOString()
                 });
@@ -532,7 +534,6 @@
                 showToast("Error al guardar el gasto", "error");
             }
         };
-
     </script>
 
     <div id="view-login" class="min-h-screen flex items-center justify-center p-6">
