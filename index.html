@@ -1127,28 +1127,7 @@
     });
   }
 </script>
-<script>
-        // 1. Bloquear el clic derecho (Menú contextual)
-        document.addEventListener('contextmenu', (event) => {
-            event.preventDefault();
-        });
 
-        document.addEventListener('keydown', (event) => {
-            // F12
-            if (event.key === 'F12') {
-                event.preventDefault();
-            }
-            if (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'J' || event.key === 'i' || event.key === 'j')) {
-                event.preventDefault();
-            }
-            if (event.ctrlKey && event.shiftKey && (event.key === 'C' || event.key === 'c')) {
-                event.preventDefault();
-            }
-            if (event.ctrlKey && (event.key === 'U' || event.key === 'u')) {
-                event.preventDefault();
-            }
-        });
-    </script>
     <div id="loading-overlay" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
     <div class="glass-card p-10 rounded-3xl text-center border border-zinc-800">
         <i data-lucide="loader" class="w-12 h-12 text-gold-text animate-spin mx-auto mb-4"></i>
