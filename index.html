@@ -92,12 +92,10 @@
         let editingProductId = null;
         let pendingAction = null;
 
-        // 2. CLAVES DE ACCESO SEGÚN TUS INSTRUCCIONES
         const PASS_STORE1 = "Vision&Resultados.2026";
         const PASS_STORE2 = "Estrategia*Valor+Diciplina";
         const PASS_MANAGEMENT = "MisReyes1623!";
 
-        // 3. FUNCIÓN DE VISUALIZACIÓN DE CONTRASEÑA (CORREGIDA)
         window.togglePassword = (inputId, iconId) => {
             const input = document.getElementById(inputId);
             const icon = document.getElementById(iconId);
@@ -108,7 +106,7 @@
                 input.type = "password";
                 icon.setAttribute('data-lucide', 'eye');
             }
-            lucide.createIcons(); // Refresca los iconos visualmente
+            lucide.createIcons();
         };
 
         window.showView = (viewKey) => {
@@ -122,7 +120,7 @@
 
         window.selectStore = (storeNum) => {
             const passInput = document.getElementById(`store-pass-${storeNum}`);
-            const pass = passInput.value.trim(); // Trim evita errores por espacios accidentales
+            const pass = passInput.value.trim();
             const correctPass = storeNum === 1 ? PASS_STORE1 : PASS_STORE2;
 
             if (pass === correctPass) {
@@ -130,7 +128,7 @@
                 document.getElementById('store-name-display').innerText = `Tienda ${storeNum}`;
                 setupFirestoreRefs();
                 window.showView('main');
-                passInput.value = ""; // Limpiar por seguridad
+                passInput.value = "";
             } else {
                 showToast("Contraseña de Sucursal Incorrecta", "error");
             }
@@ -170,7 +168,6 @@
                 const existing = cart.find(item => item.barcode === code);
                 const currentQtyInCart = existing ? existing.qty : 0;
 
-                // Verifica si sumarle uno supera el límite real de stock
                 if (currentQtyInCart + 1 <= product.quantity) {
                     if (existing) {
                         existing.qty += 1;
@@ -246,7 +243,6 @@
             const totalFactura = parseFloat(document.getElementById('cart-total').innerText);
 
             try {
-                // 1. Verificación de stock antes de procesar para evitar negativos
                 for (let item of cart) {
                     const prod = stock.find(p => p.barcode === item.barcode);
                     if (!prod || prod.quantity < item.qty) {
@@ -254,7 +250,6 @@
                     }
                 }
 
-                // 2. Registro de la venta en Firebase
                 await addDoc(salesRef, { 
                     total: totalFactura, 
                     date: new Date().toLocaleDateString(), 
@@ -263,11 +258,10 @@
                     items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price }))
                 });
                 
-                // 3. Actualización de stock (asegurando que el mínimo sea 0)
                 for (let item of cart) {
                     const prod = stock.find(p => p.barcode === item.barcode);
                     if (prod) {
-                        const newQty = Math.max(0, prod.quantity - item.qty); // Evita negativos
+                        const newQty = Math.max(0, prod.quantity - item.qty);
                         await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`, prod.id), {
                             quantity: newQty
                         });
@@ -278,7 +272,6 @@
                 cart = [];
                 window.setDiscount(0);
                 
-                // Limpiar cheques e inputs
                 Object.keys(checkMap).forEach(key => {
                     document.getElementById(`pay-${key}`).checked = false;
                     document.getElementById(`amt-${key}`).value = '';
@@ -305,7 +298,6 @@
                 let html = '<table class="w-full text-left text-sm"><thead><tr class="text-zinc-500 border-b border-zinc-800"><th class="p-4">Fecha/Hora</th><th class="p-4">Items</th><th class="p-4">Desglose de Pago</th><th class="p-4 text-right">Total</th></tr></thead><tbody>';
                 snap.forEach(doc => {
                     const s = doc.data();
-                    // Generar etiquetas de pago con montos
                     const pagosHtml = s.payments ? s.payments.map(p => 
                         `<span class="text-[9px] bg-zinc-800 px-2 py-1 rounded text-gold-text mr-1">${p.method}: $${p.amount.toFixed(2)}</span>`
                     ).join('') : '<span class="text-zinc-600">Sin datos</span>';
@@ -402,9 +394,9 @@
         window.openEditModal = (id) => {
             const p = stock.find(item => item.id === id);
             if (!p) return;
-            editingProductId = id; // Tu variable global real e intacta
+            editingProductId = id; 
             document.getElementById('ed-name').value = p.name;
-            document.getElementById('ed-category').value = p.category || ''; // Carga la categoría actual
+            document.getElementById('ed-category').value = p.category || ''; 
             document.getElementById('ed-qty').value = p.quantity;
             document.getElementById('ed-price').value = p.price;
             document.getElementById('modal-edit').classList.add('active-modal');
@@ -429,7 +421,6 @@
                 });
                 showToast("Stock Actualizado", "success");
                 document.getElementById('modal-edit').classList.remove('active-modal');
-                // Llama de forma segura a tu filtro existente para refrescar la tabla
                 if (typeof applyFilters === 'function') applyFilters();
             } catch (e) { 
                 console.error(e);
@@ -443,7 +434,7 @@
                 const snap = await getDocs(expensesRef);
                 container.innerHTML = snap.empty ? '<p class="text-center p-10 text-zinc-500">Sin gastos hoy.</p>' : snap.docs.map(doc => {
                     const e = doc.data();
-                    return `<div class="flex justify-between p-4 border-b border-zinc-800"><span>${e.description}</span><span class="text-red-400">-$${e.amount}</span></div>`;
+                    return `<div class="flex justify-between p-4 border-b border-zinc-800"><span>${e.description || e.title}</span><span class="text-red-400">-$${e.amount}</span></div>`;
                 }).join('');
             } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando gastos.</p>'; }
         };
@@ -459,7 +450,6 @@
             } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando incidencias.</p>'; }
         };
 
-       // REGISTRAR INCIDENCIA MANUALMENTE
         window.saveIncidencia = async () => {
             const type = document.getElementById('incident-manual-title').value.trim();
             const details = document.getElementById('incident-manual-desc').value.trim();
@@ -469,7 +459,6 @@
             }
 
             try {
-                // Guarda en Firebase usando la referencia automática de tu archivo
                 await addDoc(incidentsRef, {
                     type: type,
                     details: details,
@@ -478,12 +467,9 @@
                 });
 
                 showToast("Incidencia Registrada", "success");
-
-                // Limpiar campos del formulario nuevo
                 document.getElementById('incident-manual-title').value = '';
                 document.getElementById('incident-manual-desc').value = '';
 
-                // Refrescar automáticamente tu tabla con la función original de tu código
                 if (typeof window.loadIncidents === 'function') window.loadIncidents();
             } catch (e) {
                 console.error(e);
@@ -501,7 +487,7 @@
 
         window.onload = () => lucide.createIcons();
 
-      window.saveGasto = async () => {
+        window.saveGasto = async () => {
             const titleValue = document.getElementById('expense-manual-title').value.trim();
             const amountValue = document.getElementById('expense-manual-desc').value.trim();
 
@@ -510,17 +496,15 @@
             }
 
             try {
-                // Guardamos con los nombres de propiedad que tu tabla original busca
                 await addDoc(expensesRef, {
-                    title: titleValue,   // La tabla original busca 'e.title'
-                    name: titleValue,    // Por si acaso busca 'e.name'
-                    amount: amountValue, // La tabla original busca 'e.amount'
+                    title: titleValue,   
+                    name: titleValue,    
+                    amount: amountValue, 
                     date: new Date().toLocaleDateString(),
                     timestamp: new Date().toISOString()
                 });
 
                 showToast("Gasto Registrado", "success");
-
                 document.getElementById('expense-manual-title').value = '';
                 document.getElementById('expense-manual-desc').value = '';
 
@@ -530,25 +514,90 @@
                 showToast("Error al guardar", "error");
             }
         };
-       // FILTRAR EXCLUSIVAMENTE LA TABLA DE CIERRE DE CAJA
+
+        window.calcularGastosDelDiaCierre = async () => {
+            try {
+                const hoy = new Date().toLocaleDateString();
+                let totalGastos = 0;
+                let ventasEfectivo = 0;
+                let ventasPagoMovil = 0;
+                let totalVentas = 0;
+
+                // 1. Calcular Gastos
+                const queryGastos = await getDocs(expensesRef);
+                queryGastos.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.date === hoy) {
+                        totalGastos += parseFloat(data.amount) || 0;
+                    }
+                });
+
+                // 2. Calcular Ventas del Día para rellenar automáticamente la tabla
+                const queryVentas = await getDocs(salesRef);
+                const tbody = document.querySelector('#cierre-main-data-table tbody');
+                if (tbody) tbody.innerHTML = '';
+
+                queryVentas.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.date === hoy) {
+                        totalVentas += parseFloat(data.total) || 0;
+                        
+                        if (data.payments) {
+                            data.payments.forEach(p => {
+                                if (p.method === 'USD' || p.method === 'Efectivo BS') ventasEfectivo += p.amount;
+                                if (p.method === 'P. Móvil BS') ventasPagoMovil += p.amount;
+                            });
+                        }
+
+                        // Inyectar fila en los movimientos de la jornada
+                        if (tbody) {
+                            const tr = document.createElement('tr');
+                            tr.className = "border-b border-zinc-900";
+                            tr.innerHTML = `
+                                <td class="p-4 text-emerald-400 font-bold">VENTA</td>
+                                <td class="p-4 text-zinc-400">${data.items ? data.items.map(i => `${i.name} (x${i.qty})`).join(', ') : 'Artículos'}</td>
+                                <td class="p-4 text-right font-bold text-white">$${(data.total || 0).toFixed(2)}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        }
+                    }
+                });
+
+                // Rellenar campos del panel
+                if (document.getElementById('cc-cash')) document.getElementById('cc-cash').value = ventasEfectivo.toFixed(2);
+                if (document.getElementById('cc-delivery')) document.getElementById('cc-delivery').value = ventasPagoMovil.toFixed(2);
+                if (document.getElementById('cc-total-ventas')) document.getElementById('cc-total-ventas').value = totalVentas.toFixed(2);
+                if (document.getElementById('cc-total-gastos')) document.getElementById('cc-total-gastos').value = totalGastos.toFixed(2);
+                
+                const finalNeto = totalVentas - totalGastos;
+                if (document.getElementById('cc-final-neto')) document.getElementById('cc-final-neto').value = finalNeto.toFixed(2);
+
+                window.calculateCierreDifferenceFromZero();
+
+            } catch (error) {
+                console.error("Error al calcular la jornada diaria:", error);
+            }
+        };
+
         window.filterCierreTableData = () => {
-            const query = document.getElementById('cierre-filter-input').value.toLowerCase().trim();
+            const input = document.getElementById('cierre-filter-input');
+            if (!input) return;
+            const query = input.value.toLowerCase().trim();
             const rows = document.querySelectorAll('#cierre-main-data-table tbody tr');
 
             rows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                row.style.display = text.includes(query) ? "" : "none";
+                row.style.display = row.innerText.toLowerCase().includes(query) ? "" : "none";
             });
         };
 
-        // CALCULAR EL DESCUADRE AUTOMÁTICO
         window.calculateCierreDifferenceFromZero = () => {
             const netoReal = parseFloat(document.getElementById('cc-final-neto').value) || 0;
             const cajaFisica = parseFloat(document.getElementById('cc-real-cash').value) || 0;
-            
-            const diferencia = cajaFisica - netoReal;
             const diffInput = document.getElementById('cc-diff');
             
+            if (!diffInput) return;
+            
+            const diferencia = cajaFisica - netoReal;
             diffInput.value = diferencia.toFixed(2);
             
             if (diferencia < 0) {
@@ -557,6 +606,39 @@
                 diffInput.className = "w-full p-4 bg-zinc-950 border border-emerald-900 rounded-xl font-mono text-base font-bold text-emerald-400 mt-1";
             } else {
                 diffInput.className = "w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl font-mono text-base font-bold text-zinc-400 mt-1";
+            }
+        };
+
+        window.processFinalCierre = () => {
+            showToast("Cierre Registrado y Guardado con Éxito", "success");
+            window.showView('main');
+        };
+
+        window.filterManualSelectOptions = () => {
+            const query = document.getElementById('pos-manual-search-input').value.toLowerCase().trim();
+            const select = document.getElementById('pos-manual-select');
+            const options = select.options;
+
+            let firstMatch = null;
+
+            for (let i = 0; i < options.length; i++) {
+                const option = options[i];
+                if (option.value === "") continue;
+
+                const text = option.text.toLowerCase();
+
+                if (text.includes(query)) {
+                    option.style.display = ""; 
+                    if (!firstMatch) firstMatch = option.value; 
+                } else {
+                    option.style.display = "none"; 
+                }
+            }
+
+            if (firstMatch && query !== "") {
+                select.value = firstMatch;
+            } else if (query === "") {
+                select.value = "";
             }
         };
     </script>
@@ -628,10 +710,10 @@
                 <div class="p-5 bg-red-500/10 rounded-2xl text-red-400"><i data-lucide="dollar-sign" class="w-8 h-8"></i></div>
                 <span class="font-bold tracking-tight text-lg uppercase">5. Gastos</span>
             </button>
-          <button onclick="calcularGastosDelDiaCierre(); showView('view-closing')" class="glass-card p-10 rounded-[2rem] flex flex-col items-center gap-6 btn-hover">
-    <div class="p-5 bg-zinc-500/10 rounded-2xl text-zinc-500"><i data-lucide="lock" class="w-8 h-8"></i></div>
-    <span class="font-bold tracking-tight text-lg text-zinc-500 uppercase">6. Cierre Caja</span>
-</button>
+            <button onclick="calcularGastosDelDiaCierre(); showView('closing')" class="glass-card p-10 rounded-[2rem] flex flex-col items-center gap-6 btn-hover">
+                <div class="p-5 bg-zinc-500/10 rounded-2xl text-zinc-500"><i data-lucide="lock" class="w-8 h-8"></i></div>
+                <span class="font-bold tracking-tight text-lg text-zinc-500 uppercase">6. Cierre Caja</span>
+            </button>
         </div>
     </div>
 
@@ -646,21 +728,18 @@
                     <input type="text" id="pos-scanner" placeholder="ESCANEAR CÓDIGO..." class="w-full p-4 font-mono uppercase" onkeypress="if(event.key==='Enter') addToCart()">
                     
                     <div id="tienda-search-wrapper" class="w-full">
-    <div class="space-y-3">
-        <div>
-            <input type="text" id="pos-manual-search-input" oninput="filterManualSelectOptions()" placeholder="🔍 ESCRIBE PARA FILTRAR PRODUCTO..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono placeholder-zinc-600">
-        </div>
-
-        <select id="pos-manual-select" class="w-full p-4 bg-zinc-900 border border-zinc-800 text-white rounded-xl text-xs uppercase font-mono focus:border-gold-text">
-            <option value="">-- BUSCAR MANUALMENTE --</option>
-        </select>
-        
-        <button onclick="addToCart(document.getElementById('pos-manual-select').value)" class="w-full gold-gradient text-black py-3 rounded-xl font-black text-xs btn-hover uppercase shadow-lg">
-            AÑADIR PRODUCTO SELECCIONADO
-        </button>
-    </div>
-</div>
-
+                        <div class="space-y-3">
+                            <div>
+                                <input type="text" id="pos-manual-search-input" oninput="filterManualSelectOptions()" placeholder="🔍 ESCRIBE PARA FILTRAR PRODUCTO..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono placeholder-zinc-600">
+                            </div>
+                            <select id="pos-manual-select" class="w-full p-4 bg-zinc-900 border border-zinc-800 text-white rounded-xl text-xs uppercase font-mono focus:border-gold-text">
+                                <option value="">-- BUSCAR MANUALMENTE --</option>
+                            </select>
+                            <button onclick="addToCart(document.getElementById('pos-manual-select').value)" class="w-full gold-gradient text-black py-3 rounded-xl font-black text-xs btn-hover uppercase shadow-lg">
+                                AÑADIR PRODUCTO SELECCIONADO
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div class="glass-card p-8 rounded-3xl">
                     <h3 class="text-xs font-bold uppercase text-zinc-500 mb-5">Descuento aplicado</h3>
@@ -673,34 +752,34 @@
                     </div>
                 </div>
                <div class="glass-card p-8 rounded-3xl">
-    <h3 class="text-xs font-bold uppercase text-zinc-500 mb-5">Métodos de pago y cantidades</h3>
-    <div class="space-y-3 text-[10px]">
-        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
-            <label class="flex items-center gap-2 w-24 cursor-pointer">
-                <input type="checkbox" id="pay-usd" onchange="document.getElementById('amt-usd').disabled = !this.checked"> USD
-            </label>
-            <input type="number" id="amt-usd" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
-        </div>
-        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
-            <label class="flex items-center gap-2 w-24 cursor-pointer">
-                <input type="checkbox" id="pay-cash" onchange="document.getElementById('amt-cash').disabled = !this.checked"> EFECTIVO BS
-            </label>
-            <input type="number" id="amt-cash" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
-        </div>
-        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
-            <label class="flex items-center gap-2 w-24 cursor-pointer">
-                <input type="checkbox" id="pay-mobile" onchange="document.getElementById('amt-mobile').disabled = !this.checked"> P. MÓVIL BS
-            </label>
-            <input type="number" id="amt-mobile" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
-        </div>
-        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
-            <label class="flex items-center gap-2 w-24 cursor-pointer">
-                <input type="checkbox" id="pay-zelle" onchange="document.getElementById('amt-zelle').disabled = !this.checked"> ZELLE
-            </label>
-            <input type="number" id="amt-zelle" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
-        </div>
-    </div>
-</div>
+                    <h3 class="text-xs font-bold uppercase text-zinc-500 mb-5">Métodos de pago y cantidades</h3>
+                    <div class="space-y-3 text-[10px]">
+                        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
+                            <label class="flex items-center gap-2 w-24 cursor-pointer">
+                                <input type="checkbox" id="pay-usd" onchange="document.getElementById('amt-usd').disabled = !this.checked"> USD
+                            </label>
+                            <input type="number" id="amt-usd" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
+                        </div>
+                        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
+                            <label class="flex items-center gap-2 w-24 cursor-pointer">
+                                <input type="checkbox" id="pay-cash" onchange="document.getElementById('amt-cash').disabled = !this.checked"> EFECTIVO BS
+                            </label>
+                            <input type="number" id="amt-cash" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
+                        </div>
+                        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
+                            <label class="flex items-center gap-2 w-24 cursor-pointer">
+                                <input type="checkbox" id="pay-mobile" onchange="document.getElementById('amt-mobile').disabled = !this.checked"> P. MÓVIL BS
+                            </label>
+                            <input type="number" id="amt-mobile" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
+                        </div>
+                        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
+                            <label class="flex items-center gap-2 w-24 cursor-pointer">
+                                <input type="checkbox" id="pay-zelle" onchange="document.getElementById('amt-zelle').disabled = !this.checked"> ZELLE
+                            </label>
+                            <input type="number" id="amt-zelle" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="lg:col-span-2 glass-card p-8 rounded-[2.5rem] flex flex-col min-h-[600px]">
                 <div id="cart-items" class="flex-1 overflow-y-auto mb-8"></div>
@@ -752,7 +831,7 @@
                 <div class="space-y-2">
                     <label class="text-xs font-bold text-zinc-500 uppercase">Categoría</label>
                     <select id="ni-category" class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase" required>
-                         <option value="Perfumes">Perfumes</option>
+                        <option value="Perfumes">Perfumes</option>
                         <option value="Zapatos">Zapatos</option>
                         <option value="Bermudas">Bermudas</option>
                         <option value="Pantalones">Pantalones</option>
@@ -816,26 +895,26 @@
                 <label class="text-[10px] text-zinc-500 font-bold ml-1 uppercase tracking-widest">Categoría</label>
                 <select id="f-cat" class="w-full p-3 mt-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-xs uppercase">
                     <option value="">TODAS</option>
-                     <option value="Perfumes">Perfumes</option>
-                        <option value="Zapatos">Zapatos</option>
-                        <option value="Bermudas">Bermudas</option>
-                        <option value="Pantalones">Pantalones</option>
-                        <option value="Camisetas">Camisetas</option>
-                        <option value="Franelas">Franelas</option>
-                        <option value="Gorras">Gorras</option>
-                        <option value="Cremas">Cremas</option>
-                        <option value="Splash">Splash</option>
-                        <option value="Short">Short</option>
-                        <option value="Vestidos">Vestidos</option>
-                        <option value="Zandalias">Zandalias</option>
-                        <option value="Crocs">Crocs</option>
-                        <option value="Cholas">Cholas</option>
-                        <option value="Camisas">Camisas</option>
-                        <option value="Relojs">Relojs</option>
-                        <option value="Telefonos">Telefonos</option>
-                        <option value="Sueters">Sueters</option>
-                        <option value="Gorros">Gorros</option>
-                        <option value="Conjuntos">Conjuntos</option>
+                    <option value="Perfumes">Perfumes</option>
+                    <option value="Zapatos">Zapatos</option>
+                    <option value="Bermudas">Bermudas</option>
+                    <option value="Pantalones">Pantalones</option>
+                    <option value="Camisetas">Camisetas</option>
+                    <option value="Franelas">Franelas</option>
+                    <option value="Gorras">Gorras</option>
+                    <option value="Cremas">Cremas</option>
+                    <option value="Splash">Splash</option>
+                    <option value="Short">Short</option>
+                    <option value="Vestidos">Vestidos</option>
+                    <option value="Zandalias">Zandalias</option>
+                    <option value="Crocs">Crocs</option>
+                    <option value="Cholas">Cholas</option>
+                    <option value="Camisas">Camisas</option>
+                    <option value="Relojs">Relojs</option>
+                    <option value="Telefonos">Telefonos</option>
+                    <option value="Sueters">Sueters</option>
+                    <option value="Gorros">Gorros</option>
+                    <option value="Conjuntos">Conjuntos</option>
                     <option value="Otros">Otros</option>
                 </select>
             </div>
@@ -896,8 +975,7 @@
 
             <div class="lg:col-span-2 glass-card rounded-[2rem] p-8 min-h-[400px]">
                 <h3 class="text-xs font-bold uppercase text-zinc-500 mb-6">Historial de Egresos</h3>
-                <div id="expenses-container" class="overflow-x-auto text-zinc-300">
-                    </div>
+                <div id="expenses-container" class="overflow-x-auto text-zinc-300"></div>
             </div>
         </div>
     </div>
@@ -928,27 +1006,22 @@
 
             <div class="lg:col-span-2 glass-card rounded-[2rem] p-8 min-h-[400px]">
                 <h3 class="text-xs font-bold uppercase text-zinc-500 mb-6">Historial de Reportes</h3>
-                <div id="incidents-container" class="overflow-x-auto text-zinc-300">
-                    </div>
+                <div id="incidents-container" class="overflow-x-auto text-zinc-300"></div>
             </div>
         </div>
     </div>
 
-<div id="view-closing" class="hidden container mx-auto px-4 py-8">
-    
-    <div class="max-w-4xl mx-auto space-y-6">
-        <div class="flex justify-between items-center mb-4">
+    <div id="view-closing" class="hidden p-8 max-w-4xl mx-auto space-y-6">
+        <div class="w-full flex justify-between items-center mb-4 p-4 glass-card rounded-2xl border border-zinc-900">
             <div>
                 <h2 class="text-2xl font-black text-white tracking-tight uppercase flex items-center gap-3">
                     <i data-lucide="lock" class="text-gold-text w-6 h-6"></i> Cierre de Caja Diario
                 </h2>
                 <p class="text-zinc-500 text-xs uppercase tracking-wider mt-1 font-mono">Cuadratura de cuentas e ingresos</p>
             </div>
-            <button onclick="showView('dashboard')" class="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white px-4 py-2 rounded-xl font-bold text-xs uppercase font-mono btn-hover flex items-center gap-2">
+            <button onclick="showView('main')" class="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white px-4 py-2 rounded-xl font-bold text-xs uppercase font-mono btn-hover flex items-center gap-2">
                 <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver
             </button>
-        </div>
-        
         </div>
 
         <div class="bg-zinc-950 p-5 rounded-2xl border border-zinc-900">
@@ -1022,14 +1095,11 @@
                             <th class="p-4 font-bold text-right">Monto ($)</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-zinc-900 text-zinc-300">
-                        </tbody>
+                    <tbody class="divide-y divide-zinc-900 text-zinc-300"></tbody>
                 </table>
             </div>
         </div>
     </div>
-
-</div>
 
     <div id="modal-password" class="modal">
         <div class="glass-card p-10 rounded-[2.5rem] max-w-sm w-full border-t-4 border-gold-text">
@@ -1092,47 +1162,60 @@
         </div>
     </div>
 
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('Service Worker registrado con éxito', reg))
+            .catch(err => console.warn('Error al registrar el Service Worker', err));
+        });
+      }
+    </script>
+    <script>
+        document.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+        });
 
-        <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('Service Worker registrado con éxito', reg))
-        .catch(err => console.warn('Error al registrar el Service Worker', err));
-    });
-  }
-</script>
-
-    <div id="loading-overlay" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-    <div class="glass-card p-10 rounded-3xl text-center border border-zinc-800">
-        <i data-lucide="loader" class="w-12 h-12 text-gold-text animate-spin mx-auto mb-4"></i>
-        <h3 class="text-white font-black text-xl uppercase">Procesando...</h3>
-    </div>
-</div>
-
-<script>
-    // CONTROLADOR DE BUCLE DE CARGA
-    window.startLoadingLoop = () => {
-        const overlay = document.getElementById('loading-overlay');
-        overlay.classList.remove('hidden'); // Mostrar
-        
-        // Bloqueo de 30 segundos (30000 ms)
-        setTimeout(() => {
-            overlay.classList.add('hidden'); // Ocultar después de 30s
-            if (window.lucide) lucide.createIcons();
-        }, 5000); 
-    };
-
-    // Esto "inyecta" el bucle en tus botones sin tocar el código original
-    document.querySelectorAll('button').forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Solo se activa si el botón no es el de "Cerrar" o "Volver"
-            if (!btn.innerText.includes('Cerrar') && !btn.innerText.includes('VOLVER')) {
-                window.startLoadingLoop();
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'F12') {
+                event.preventDefault();
+            }
+            if (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'J' || event.key === 'i' || event.key === 'j')) {
+                event.preventDefault();
+            }
+            if (event.ctrlKey && event.shiftKey && (event.key === 'C' || event.key === 'c')) {
+                event.preventDefault();
+            }
+            if (event.ctrlKey && (event.key === 'U' || event.key === 'u')) {
+                event.preventDefault();
             }
         });
-    });
-</script>
+    </script>
+    <div id="loading-overlay" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="glass-card p-10 rounded-3xl text-center border border-zinc-800">
+            <i data-lucide="loader" class="w-12 h-12 text-gold-text animate-spin mx-auto mb-4"></i>
+            <h3 class="text-white font-black text-xl uppercase">Procesando...</h3>
+        </div>
+    </div>
 
+    <script>
+        window.startLoadingLoop = () => {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.remove('hidden'); 
+            
+            setTimeout(() => {
+                overlay.classList.add('hidden'); 
+                if (window.lucide) lucide.createIcons();
+            }, 1000); 
+        };
+
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!btn.innerText.includes('Cerrar') && !btn.innerText.includes('VOLVER') && !btn.innerText.includes('Volver')) {
+                    window.startLoadingLoop();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
