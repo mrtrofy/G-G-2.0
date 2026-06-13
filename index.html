@@ -964,46 +964,7 @@
         </div>
     </div>
 
-    <div class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Ventas Efectivo ($)</label>
-                        <input type="number" id="cc-cash" readonly class="w-full p-4 bg-zinc-950 border border-zinc-900 rounded-xl font-mono text-white text-sm">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Ventas PagoMóvil ($)</label>
-                        <input type="number" id="cc-delivery" readonly class="w-full p-4 bg-zinc-950 border border-zinc-900 rounded-xl font-mono text-white text-sm">
-                    </div>
-                </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Total Ventas Brutas ($)</label>
-                        <input type="number" id="cc-total-ventas" readonly class="w-full p-4 bg-zinc-950 border border-zinc-900 rounded-xl font-mono text-gold-text text-sm font-bold">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-red-400 uppercase font-bold">Total Gastos Diarios ($)</label>
-                        <input type="number" id="cc-total-gastos" readonly class="w-full p-4 bg-zinc-950 border border-red-900/50 rounded-xl font-mono text-red-500 text-sm font-bold">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="text-[10px] text-emerald-500 uppercase font-bold">Caja Neta Real (Ventas - Gastos) ($)</label>
-                    <input type="number" id="cc-final-neto" readonly class="w-full p-4 bg-zinc-950 border border-emerald-900/50 rounded-xl font-mono text-emerald-400 text-base font-black">
-                </div>
-
-                <hr class="border-zinc-900 my-2">
-
-                <div>
-                    <label class="text-[10px] text-zinc-500 uppercase font-bold">Efectivo Físico en Caja ($)</label>
-                    <input type="number" id="cc-real-cash" oninput="calculateCierreDifference()" placeholder="0.00" class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text font-mono text-white text-sm">
-                </div>
-
-                <div>
-                    <label class="text-[10px] text-zinc-500 uppercase font-bold">Diferencia / Descuadre ($)</label>
-                    <input type="number" id="cc-diff" readonly class="w-full p-4 bg-zinc-950 border border-zinc-900 rounded-xl font-mono text-sm font-bold">
-                </div>
-            </div>
 
     <div id="modal-password" class="modal">
         <div class="glass-card p-10 rounded-[2.5rem] max-w-sm w-full border-t-4 border-gold-text">
