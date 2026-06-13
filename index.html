@@ -530,32 +530,33 @@
                 showToast("Error al guardar", "error");
             }
         };
-        // FUNCIÓN INDEPENDIENTE PARA CALCULAR LOS GASTOS EN EL CIERRE
-        window.calcularGastosDelDiaCierre = async () => {
-            try {
-                const hoy = new Date().toLocaleDateString();
-                let totalGastos = 0;
+       // 1. FILTRAR LA TABLA EN TIEMPO REAL
+        window.filterCierreTableData = () => {
+            const query = document.getElementById('cierre-filter-input').value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#cierre-main-data-table tbody tr');
 
-                // Consultamos la colección de gastos de la sucursal actual
-                const querySnapshot = await getDocs(expensesRef);
-                
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    // Filtramos para sumar solo los que correspondan a la fecha de hoy
-                    if (data.date === hoy) {
-                        const monto = parseFloat(data.amount) || 0;
-                        totalGastos += monto;
-                    }
-                });
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? "" : "none";
+            });
+        };
 
-                // Insertamos el total sumado en el input del caja
-                const inputGastos = document.getElementById('cc-total-gastos');
-                if (inputGastos) {
-                    inputGastos.value = totalGastos.toFixed(2);
-                }
-
-            } catch (error) {
-                console.error("Error al calcular los gastos diarios:", error);
+        // 2. COMPROBAR EL DESCUADRE AUTOMÁTICO
+        window.calculateCierreDifferenceFromZero = () => {
+            const netoReal = parseFloat(document.getElementById('cc-final-neto').value) || 0;
+            const cajaFisica = parseFloat(document.getElementById('cc-real-cash').value) || 0;
+            
+            const diferencia = cajaFisica - netoReal;
+            const diffInput = document.getElementById('cc-diff');
+            
+            diffInput.value = diferencia.toFixed(2);
+            
+            if (diferencia < 0) {
+                diffInput.className = "w-full p-4 bg-zinc-950 border border-red-900 rounded-xl font-mono text-base font-bold text-red-500 mt-1";
+            } else if (diferencia > 0) {
+                diffInput.className = "w-full p-4 bg-zinc-950 border border-emerald-900 rounded-xl font-mono text-base font-bold text-emerald-400 mt-1";
+            } else {
+                diffInput.className = "w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl font-mono text-base font-bold text-zinc-400 mt-1";
             }
         };
 
