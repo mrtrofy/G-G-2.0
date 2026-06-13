@@ -558,6 +558,37 @@
                 console.error("Error al calcular los gastos diarios:", error);
             }
         };
+
+        // FILTRAR LAS OPCIONES DEL SELECT MANUAL EN TIEMPO REAL
+        window.filterManualSelectOptions = () => {
+            const query = document.getElementById('pos-manual-search-input').value.toLowerCase().trim();
+            const select = document.getElementById('pos-manual-select');
+            const options = select.options;
+
+            let firstMatch = null;
+
+            for (let i = 0; i < options.length; i++) {
+                const option = options[i];
+                // Ignoramos la opción por defecto que dice "-- BUSCAR MANUALMENTE --"
+                if (option.value === "") continue;
+
+                const text = option.text.toLowerCase();
+
+                if (text.includes(query)) {
+                    option.style.display = ""; // Muestra la opción si coincide
+                    if (!firstMatch) firstMatch = option.value; // Guarda el primer resultado
+                } else {
+                    option.style.display = "none"; // Oculta la opción si no coincide
+                }
+            }
+
+            // Auto-selecciona el primer resultado que coincida para hacer el proceso más rápido
+            if (firstMatch && query !== "") {
+                select.value = firstMatch;
+            } else if (query === "") {
+                select.value = "";
+            }
+        };
     </script>
 
     <div id="view-login" class="min-h-screen flex items-center justify-center p-6">
@@ -645,9 +676,14 @@
                     <input type="text" id="pos-scanner" placeholder="ESCANEAR CÓDIGO..." class="w-full p-4 font-mono uppercase" onkeypress="if(event.key==='Enter') addToCart()">
                     
                     <div class="space-y-3">
-                        <select id="pos-manual-select" class="w-full p-4">
+                        <div>
+                            <input type="text" id="pos-manual-search-input" oninput="filterManualSelectOptions()" placeholder="🔍 ESCRIBE PARA FILTRAR PRODUCTO..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono placeholder-zinc-600">
+                        </div>
+
+                        <select id="pos-manual-select" class="w-full p-4 bg-zinc-900 border border-zinc-800 text-white rounded-xl text-xs uppercase font-mono focus:border-gold-text">
                             <option value="">-- BUSCAR MANUALMENTE --</option>
                         </select>
+                        
                         <button onclick="addToCart(document.getElementById('pos-manual-select').value)" class="w-full gold-gradient text-black py-3 rounded-xl font-black text-xs btn-hover uppercase shadow-lg">
                             AÑADIR PRODUCTO SELECCIONADO
                         </button>
