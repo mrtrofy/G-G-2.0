@@ -68,14 +68,16 @@
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyD1sJKaLw4ba41SPTMy1ZoPQCSHynuzLrA",
-            authDomain: "gyg-2-0.firebaseapp.com",
-            projectId: "gyg-2-0",
-            storageBucket: "gyg-2-0.firebasestorage.app",
-            messagingSenderId: "248474716571",
-            appId: "1:248474716571:web:b6a2bfa565c3125d08393e",
-            measurementId: "G-DPBHL3P6D7"
-        };
+  apiKey: "AIzaSyD1sJKaLw4ba41SPTMy1ZoPQCSHynuzLrA",
+  authDomain: "gyg-2-0.firebaseapp.com",
+  databaseURL: "https://gyg-2-0-default-rtdb.firebaseio.com",
+  projectId: "gyg-2-0",
+  storageBucket: "gyg-2-0.firebasestorage.app",
+  messagingSenderId: "248474716571",
+  appId: "1:248474716571:web:b6a2bfa565c3125d08393e",
+  measurementId: "G-DPBHL3P6D7"
+};
+
 
         let db;
         try {
@@ -689,6 +691,7 @@
         };
 
         // Carga el historial de cierres sustituyendo el monto por el botón de Detalles
+// Carga el historial de cierres sustituyendo el monto por el botón de Detalles
 window.loadCierresHistoricos = async () => {
     const container = document.getElementById('historial-cierres-container');
     if (!container) return;
@@ -718,8 +721,8 @@ window.loadCierresHistoricos = async () => {
         
         snap.forEach(docSnap => {
             const c = docSnap.data();
-            // Validamos que tenga una fecha válida, si no usamos el timestamp formateado
-            const fechaValida = c.date || (c.timestamp ? new Date(c.timestamp).toLocaleDateString() : 'Fecha N/A');
+            // Validamos que exista una fecha guardada
+            const fechaValida = c.date || 'Fecha N/A';
             
             html += `
                 <tr class="border-b border-zinc-950 hover:bg-zinc-900/30">
@@ -737,7 +740,7 @@ window.loadCierresHistoricos = async () => {
         container.innerHTML = html;
         if (window.lucide) lucide.createIcons();
     } catch (e) {
-        console.error(e);
+        console.error("Error cargando cierres:", e);
         container.innerHTML = '<p class="p-10 text-red-500 text-center">Error al cargar cierres históricos.</p>';
     }
 };
