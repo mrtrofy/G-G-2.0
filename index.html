@@ -434,16 +434,26 @@
             } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando ventas.</p>'; }
         };
 
-        window.loadExpenses = async () => {
-            const container = document.getElementById('expenses-container');
-            try {
-                const snap = await getDocs(expensesRef);
-                container.innerHTML = snap.empty ? '<p class="text-center p-10 text-zinc-500">Sin gastos hoy.</p>' : snap.docs.map(doc => {
-                    const e = doc.data();
-                    return `<div class="flex justify-between p-4 border-b border-zinc-800"><span>${e.description || e.title}</span><span class="text-red-400">-$${e.amount}</span></div>`;
-                }).join('');
-            } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando gastos.</p>'; }
-        };
+       window.loadExpenses = async () => {
+    const container = document.getElementById('expenses-container');
+    try {
+        const snap = await getDocs(expensesRef);
+        container.innerHTML = snap.empty ? '<p class="text-center p-10 text-zinc-500 text-xs font-bold uppercase tracking-widest">Sin gastos registrados hoy.</p>' : snap.docs.map(doc => {
+            const e = doc.data();
+            // Aseguramos que el monto siempre tenga 2 decimales
+            const montoFormateado = parseFloat(e.amount || 0).toFixed(2);
+            
+            return `
+                <div class="flex justify-between items-center p-4 border-b border-zinc-800/50 hover:bg-zinc-900/30 transition-colors">
+                    <span class="font-bold text-white text-xs uppercase">${e.title || 'Sin concepto'}</span>
+                    <span class="text-red-500 font-mono font-black text-sm">-$${montoFormateado}</span>
+                </div>
+            `;
+        }).join('');
+    } catch (e) { 
+        container.innerHTML = '<p class="p-10 text-red-500 text-center text-xs">Error cargando historial de gastos.</p>'; 
+    }
+};
 
         window.loadIncidents = async () => {
             const container = document.getElementById('incidents-container');
@@ -493,33 +503,37 @@
 
         window.onload = () => lucide.createIcons();
 
-        window.saveGasto = async () => {
-            const titleValue = document.getElementById('expense-manual-title').value.trim();
-            const amountValue = document.getElementById('expense-manual-desc').value.trim();
+       window.saveGasto = async () => {
+    const titleValue = document.getElementById('expense-manual-title').value.trim();
+    // Capturamos el nuevo input numérico
+    const montoGasto = parseFloat(document.getElementById('montoGasto').value);
 
-            if (!titleValue || !amountValue) {
-                return showToast("Por favor, llene todos los campos", "error");
-            }
+    // Validamos que haya título y que el monto sea un número válido
+    if (!titleValue || isNaN(montoGasto) || montoGasto <= 0) {
+        return showToast("Por favor, ingrese un concepto y un monto mayor a 0", "error");
+    }
 
-            try {
-                await addDoc(expensesRef, {
-                    title: titleValue,   
-                    name: titleValue,    
-                    amount: amountValue, 
-                    date: new Date().toLocaleDateString(),
-                    timestamp: new Date().toISOString()
-                });
+    try {
+        await addDoc(expensesRef, {
+            title: titleValue,   
+            amount: montoGasto, 
+            date: new Date().toLocaleDateString(),
+            timestamp: new Date().toISOString()
+        });
 
-                showToast("Gasto Registrado", "success");
-                document.getElementById('expense-manual-title').value = '';
-                document.getElementById('expense-manual-desc').value = '';
+        showToast("Gasto Registrado", "success");
+        
+        // Limpiamos los campos
+        document.getElementById('expense-manual-title').value = '';
+        document.getElementById('montoGasto').value = '';
 
-                if (typeof window.loadExpenses === 'function') window.loadExpenses();
-            } catch (e) {
-                console.error(e);
-                showToast("Error al guardar", "error");
-            }
-        };
+        // Recargamos la tabla
+        if (typeof window.loadExpenses === 'function') window.loadExpenses();
+    } catch (e) {
+        console.error(e);
+        showToast("Error al guardar", "error");
+    }
+};
 
         window.calcularGastosDelDiaCierre = async () => {
             try {
@@ -1149,10 +1163,10 @@
                         <label class="text-[10px] text-zinc-500 uppercase font-bold">Título / Concepto</label>
                         <input type="text" id="expense-manual-title" placeholder="ESCRIBE EL TÍTULO QUE TÚ QUIERAS..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono mt-1">
                     </div>
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Descripción / Detalles del Gasto</label>
-                        <textarea id="expense-manual-desc" placeholder="ESCRIBE LA DESCRIPCIÓN O MONTO LIBRE AQUÍ..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase h-32 resize-none text-white mt-1"></textarea>
-                    </div>
+                    <<div>
+    <label class="text-[10px] text-zinc-500 uppercase font-bold">Monto del Gasto ($)</label>
+    <input type="number" id="montoGasto" placeholder="0.00" step="0.01" min="0" class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-red-500 text-xl font-black text-red-400 font-mono mt-1">
+</div>
                     <button onclick="saveGasto()" class="w-full gold-gradient text-black py-4 rounded-xl font-black text-xs btn-hover uppercase shadow-lg mt-2">
                         REGISTRAR GASTO
                     </button>
