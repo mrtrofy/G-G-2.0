@@ -593,23 +593,23 @@
         };
 
        window.calculateCierreDifferenceFromZero = () => {
-            const netoReal = parseFloat(document.getElementById('cc-final-neto').value) || 0;
-            const cajaFisica = parseFloat(document.getElementById('cc-real-cash').value) || 0;
-            const diffInput = document.getElementById('cc-diff');
-            if (!diffInput) return;
-            
-            // Forzamos el cálculo limpio a dos decimales
-            const diferencia = parseFloat((cajaFisica - netoReal).toFixed(2));
-            diffInput.value = diferencia.toFixed(2);
-            
-            if (diferencia < 0) {
-                diffInput.className = "w-full p-4 bg-zinc-950 border border-red-900 rounded-xl font-mono text-base font-bold text-red-500 mt-1";
-            } else if (diferencia > 0) {
-                diffInput.className = "w-full p-4 bg-zinc-950 border border-emerald-900 rounded-xl font-mono text-base font-bold text-emerald-400 mt-1";
-            } else {
-                diffInput.className = "w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl font-mono text-base font-bold text-zinc-400 mt-1";
-            }
-        };
+    const netoReal = parseFloat(document.getElementById('cc-final-neto').value) || 0;
+    const cajaFisica = parseFloat(document.getElementById('cc-real-cash').value) || 0;
+    const diffInput = document.getElementById('cc-diff');
+    if (!diffInput) return;
+    
+    // Forzamos el cálculo limpio a dos decimales
+    const diferencia = parseFloat((cajaFisica - netoReal).toFixed(2));
+    diffInput.value = diferencia.toFixed(2);
+    
+    if (diferencia < 0) {
+        diffInput.className = "w-full p-4 bg-zinc-950 border border-red-900 rounded-xl font-mono text-base font-bold text-red-500 mt-1";
+    } else if (diferencia > 0) {
+        diffInput.className = "w-full p-4 bg-zinc-950 border border-emerald-900 rounded-xl font-mono text-base font-bold text-emerald-400 mt-1";
+    } else {
+        diffInput.className = "w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl font-mono text-base font-bold text-zinc-400 mt-1";
+    }
+};
 
         window.processFinalCierre = async () => {
             if (!currentStore) {
@@ -734,43 +734,45 @@ window.loadCierresHistoricos = async () => {
 };
 
 // Verifica la contraseña requerida
-window.verificarClaveDetalleCierre = (fechaCierre) => {
-    const clave = prompt("🔐 Ingrese la contraseña de seguridad para ver los detalles de este día:");
-    if (clave === "MIsREyes0803!") {
-        window.mostrarDetallesVentasDia(fechaCierre);
-    } else if (clave !== null) {
+// Solicita la contraseña secreta
+window.solicitarClaveCierre = (fechaCierre) => {
+    const password = prompt("🔐 Ingrese la contraseña de seguridad para ver el desglose diario:");
+    if (password === "MIsREyes0803!") {
+        window.abrirDetalleIndependiente(fechaCierre);
+    } else if (password !== null) {
         alert("❌ Contraseña incorrecta. Acceso denegado.");
     }
 };
 
-// Abre la ventana independiente (Modal) y busca lo vendido y los métodos de pago en Firebase
-window.mostrarDetallesVentasDia = async (fechaCierre) => {
+// Busca la información en las ventas de Firebase y abre el modal descriptivo
+window.abrirDetalleIndependiente = async (fechaCierre) => {
     const modal = document.getElementById('modal-detalle-dia');
     const title = document.getElementById('modal-detalle-dia-title');
     const content = document.getElementById('modal-detalle-dia-content');
     
     if(!modal || !content) return;
     
-    title.innerText = `Cierre - Día ${fechaCierre}`;
-    content.innerHTML = '<div class="p-10 text-center"><i data-lucide="loader" class="w-8 h-8 animate-spin mx-auto text-gold-text"></i><p class="text-xs text-zinc-500 mt-2">Buscando operaciones de la jornada...</p></div>';
+    title.innerText = `Cierre de Caja - ${fechaCierre}`;
+    content.innerHTML = '<div class="p-8 text-center"><i data-lucide="loader" class="w-8 h-8 animate-spin mx-auto text-gold-text mb-2"></i><p class="text-xs text-zinc-500">Consultando base de datos...</p></div>';
     modal.classList.add('active-modal');
     if (window.lucide) lucide.createIcons();
     
     try {
+        // Consultamos la colección de ventas globales (salesRef)
         const snap = await getDocs(salesRef);
         let ventasDelDia = [];
-        let totalesPorMetodo = { 'USD': 0, 'Efectivo BS': 0, 'P. Móvil BS': 0, 'Zelle': 0 };
-        let totalGeneral = 0;
+        let resumenPagos = { 'USD': 0, 'Efectivo BS': 0, 'P. Móvil BS': 0, 'Zelle': 0 };
+        let granTotal = 0;
         
         snap.forEach(doc => {
-            const sale = doc.data();
-            if (sale.date === fechaCierre) {
-                ventasDelDia.push(sale);
-                totalGeneral += parseFloat(sale.total) || 0;
-                if (sale.payments) {
-                    sale.payments.forEach(p => {
-                        if (totalesPorMetodo[p.method] !== undefined) {
-                            totalesPorMetodo[p.method] += parseFloat(p.amount) || 0;
+            const venta = doc.data();
+            if (venta.date === fechaCierre) {
+                ventasDelDia.push(venta);
+                granTotal += parseFloat(venta.total) || 0;
+                if (venta.payments) {
+                    venta.payments.forEach(p => {
+                        if (resumenPagos[p.method] !== undefined) {
+                            resumenPagos[p.method] += parseFloat(p.amount) || 0;
                         }
                     });
                 }
@@ -778,54 +780,55 @@ window.mostrarDetallesVentasDia = async (fechaCierre) => {
         });
         
         if (ventasDelDia.length === 0) {
-            content.innerHTML = '<p class="text-center text-zinc-500 p-6">No se encontraron ventas guardadas en este día.</p>';
+            content.innerHTML = '<p class="text-center text-zinc-500 py-6 text-xs">No hay artículos ni transacciones registradas en este día.</p>';
             return;
         }
         
-        let htmlContent = `
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-900">
-                    <p class="text-[10px] text-zinc-500 uppercase font-bold">Total Facturado</p>
-                    <p class="text-lg font-black text-emerald-400">$${totalGeneral.toFixed(2)}</p>
-                </div>
-                <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-900">
-                    <p class="text-[10px] text-zinc-500 uppercase font-bold">Ventas Totales</p>
-                    <p class="text-lg font-black text-white">${ventasDelDia.length}</p>
-                </div>
-            </div>
-            
-            <h4 class="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Métodos de Pago Utilizados:</h4>
+        // Estructura limpia y minimalista alineada con tu diseño negro/dorado
+        let html = `
             <div class="grid grid-cols-2 gap-2 mb-4">
-                <div class="bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-800/50 flex justify-between items-center">
-                    <span class="text-xs text-zinc-400">💵 USD Físico:</span>
-                    <span class="text-xs font-bold text-white">$${totalesPorMetodo['USD'].toFixed(2)}</span>
+                <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-900">
+                    <span class="text-[10px] text-zinc-500 block uppercase font-bold tracking-wider">Total del Día</span>
+                    <span class="text-lg font-black text-emerald-400">$${granTotal.toFixed(2)}</span>
                 </div>
-                <div class="bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-800/50 flex justify-between items-center">
-                    <span class="text-xs text-zinc-400">🇻🇪 Efectivo BS:</span>
-                    <span class="text-xs font-bold text-white">$${totalesPorMetodo['Efectivo BS'].toFixed(2)}</span>
-                </div>
-                <div class="bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-800/50 flex justify-between items-center">
-                    <span class="text-xs text-zinc-400">📱 P. Móvil BS:</span>
-                    <span class="text-xs font-bold text-white">$${totalesPorMetodo['P. Móvil BS'].toFixed(2)}</span>
-                </div>
-                <div class="bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-800/50 flex justify-between items-center">
-                    <span class="text-xs text-zinc-400">🇺🇸 Zelle:</span>
-                    <span class="text-xs font-bold text-white">$${totalesPorMetodo['Zelle'].toFixed(2)}</span>
+                <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-900">
+                    <span class="text-[10px] text-zinc-500 block uppercase font-bold tracking-wider">Transacciones</span>
+                    <span class="text-lg font-black text-white">${ventasDelDia.length}</span>
                 </div>
             </div>
             
-            <h4 class="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Artículos Vendidos:</h4>
+            <h4 class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Métodos de Pago:</h4>
+            <div class="grid grid-cols-2 gap-2 mb-4 text-xs">
+                <div class="bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/40 flex justify-between items-center">
+                    <span class="text-zinc-400">💵 USD Físico:</span>
+                    <span class="font-bold text-white">$${resumenPagos['USD'].toFixed(2)}</span>
+                </div>
+                <div class="bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/40 flex justify-between items-center">
+                    <span class="text-zinc-400">🇻🇪 Efectivo BS:</span>
+                    <span class="font-bold text-white">$${resumenPagos['Efectivo BS'].toFixed(2)}</span>
+                </div>
+                <div class="bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/40 flex justify-between items-center">
+                    <span class="text-zinc-400">📱 P. Móvil BS:</span>
+                    <span class="font-bold text-white">$${resumenPagos['P. Móvil BS'].toFixed(2)}</span>
+                </div>
+                <div class="bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/40 flex justify-between items-center">
+                    <span class="text-zinc-400">🇺🇸 Zelle:</span>
+                    <span class="font-bold text-white">$${resumenPagos['Zelle'].toFixed(2)}</span>
+                </div>
+            </div>
+            
+            <h4 class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Prendas / Artículos Vendidos:</h4>
             <div class="max-h-40 overflow-y-auto space-y-1.5 pr-1">
         `;
         
-        ventasDelDia.forEach(sale => {
-            if (sale.items) {
-                sale.items.forEach(item => {
-                    htmlContent += `
+        ventasDelDia.forEach(v => {
+            if (v.items) {
+                v.items.forEach(item => {
+                    html += `
                         <div class="flex justify-between items-center bg-zinc-950 p-2.5 rounded-xl border border-zinc-900 text-xs">
                             <div>
-                                <p class="font-bold text-white">${item.name}</p>
-                                <p class="text-[10px] text-zinc-500">Cantidad: x${item.qty}</p>
+                                <p class="font-bold text-white uppercase">${item.name}</p>
+                                <p class="text-[10px] text-zinc-500">Cantidad vendida: x${item.qty}</p>
                             </div>
                             <span class="font-mono text-gold-text font-bold">$${(item.price * item.qty).toFixed(2)}</span>
                         </div>
@@ -834,13 +837,13 @@ window.mostrarDetallesVentasDia = async (fechaCierre) => {
             }
         });
         
-        htmlContent += `</div>`;
-        content.innerHTML = htmlContent;
+        html += `</div>`;
+        content.innerHTML = html;
         if (window.lucide) lucide.createIcons();
         
     } catch (err) {
         console.error(err);
-        content.innerHTML = '<p class="text-center text-red-400 p-6">Error al consultar los registros del día.</p>';
+        content.innerHTML = '<p class="text-center text-red-400 p-4 text-xs">Error al leer las transacciones de Firebase.</p>';
     }
 };
     </script>
@@ -1289,16 +1292,16 @@ window.mostrarDetallesVentasDia = async (fechaCierre) => {
                 <h4 class="text-xs font-black uppercase tracking-wider text-zinc-400 font-mono">Movimientos de la Jornada</h4>
             </div>
             <div class="overflow-x-auto">
-                <table id="cierre-main-data-table" class="w-full text-left font-mono text-xs">
-                    <thead>
-                        <tr class="bg-zinc-950 text-zinc-500 border-b border-zinc-900 uppercase">
-                            <th class="p-4 font-bold">Tipo</th>
-                            <th class="p-4 font-bold">Concepto / Detalle</th>
-                            <th class="p-4 font-bold text-right">Monto ($)</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-900 text-zinc-300"></tbody>
-                </table>
+                <table class="w-full text-left text-xs text-zinc-400">
+    <thead>
+        <tr class="border-b border-zinc-800 text-zinc-500 uppercase tracking-wider text-[10px]">
+            <th class="p-3">Día del Cierre</th>
+            <th class="p-3 text-right">Acción</th>
+        </tr>
+    </thead>
+    <tbody id="cc-history-tbody">
+        </tbody>
+</table>
             </div>
         </div>
     </div>
@@ -1365,10 +1368,11 @@ window.mostrarDetallesVentasDia = async (fechaCierre) => {
             </div>
         </div>
     </div>
-    <div id="modal-detalle-dia" class="modal">
+    
+   <div id="modal-detalle-dia" class="modal">
         <div class="glass-card w-full max-w-md p-6 rounded-3xl border border-zinc-800 shadow-2xl relative">
             <div class="flex justify-between items-center mb-4 border-b border-zinc-800/60 pb-3">
-                <h3 id="modal-detalle-dia-title" class="text-white font-black text-sm uppercase tracking-wider">Detalles de Venta</h3>
+                <h3 id="modal-detalle-dia-title" class="text-white font-black text-xs uppercase tracking-widest gold-text">Detalles de Venta</h3>
                 <button onclick="document.getElementById('modal-detalle-dia').classList.remove('active-modal')" class="text-zinc-500 hover:text-white p-1">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
@@ -1377,13 +1381,11 @@ window.mostrarDetallesVentasDia = async (fechaCierre) => {
             <div id="modal-detalle-dia-content" class="space-y-3"></div>
             
             <div class="mt-5 pt-3 border-t border-zinc-800/60 flex">
-                <button onclick="document.getElementById('modal-detalle-dia').classList.remove('active-modal')" class="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-2.5 rounded-xl transition-colors text-xs uppercase tracking-widest">
-                    Cerrar Detalle
+                <button onclick="document.getElementById('modal-detalle-dia').classList.remove('active-modal')" class="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-bold py-2.5 rounded-xl transition-colors text-xs uppercase tracking-widest border border-zinc-800">
+                    Cerrar Vista
                 </button>
             </div>
         </div>
-    </div>
-    <div id="historial-cierres-container">
     </div>
     <script>
       if ('serviceWorker' in navigator) {
