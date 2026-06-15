@@ -292,16 +292,22 @@
         };
 
         window.checkPassword = () => {
-            const input = document.getElementById('pass-input');
-            if (input.value === PASS_MANAGEMENT) {
-                document.getElementById('modal-password').classList.remove('active-modal');
-                input.value = "";
-                window.showView(pendingAction);
-                if (pendingAction === 'sales') loadSales();
-            } else { 
-                showToast("Clave Maestra Incorrecta", "error"); 
-            }
-        };
+    const input = document.getElementById('pass-input');
+    if (input.value === PASS_MANAGEMENT) {
+        document.getElementById('modal-password').classList.remove('active-modal');
+        input.value = "";
+        window.showView(pendingAction);
+        
+        // Si entra a ventas carga las ventas, si entra a administración carga los cierres
+        if (pendingAction === 'sales') {
+            loadSales();
+        } else if (pendingAction === 'management') {
+            window.loadCierresHistoricos();
+        }
+    } else { 
+        showToast("Clave Maestra Incorrecta", "error"); 
+    }
+};
 
         window.applyFilters = () => {
             const search = document.getElementById('f-search').value.toLowerCase();
@@ -684,7 +690,7 @@
 
         // Carga el historial de cierres sustituyendo el monto por el botón de Detalles
 window.loadCierresHistoricos = async () => {
-    const container = document.getElementById('historial-cierres-container'); 
+    const container = document.getElementById('historial-cierres-container');
     if (!container) return;
     container.innerHTML = '<div class="p-10 text-center"><i data-lucide="loader" class="w-8 h-8 animate-spin mx-auto text-gold-text"></i></div>';
     if (window.lucide) lucide.createIcons();
@@ -712,11 +718,14 @@ window.loadCierresHistoricos = async () => {
         
         snap.forEach(docSnap => {
             const c = docSnap.data();
+            // Validamos que tenga una fecha válida, si no usamos el timestamp formateado
+            const fechaValida = c.date || (c.timestamp ? new Date(c.timestamp).toLocaleDateString() : 'Fecha N/A');
+            
             html += `
                 <tr class="border-b border-zinc-950 hover:bg-zinc-900/30">
-                    <td class="p-4 font-semibold text-white">${c.date}</td>
+                    <td class="p-4 font-semibold text-white">${fechaValida}</td>
                     <td class="p-4 text-center">
-                        <button onclick="window.verificarClaveDetalleCierre('${c.date}')" class="gold-gradient px-4 py-1.5 rounded-xl text-black text-xs font-black tracking-wider uppercase btn-hover">
+                        <button onclick="window.solicitarClaveCierre('${fechaValida}')" class="gold-gradient px-4 py-1.5 rounded-xl text-black text-xs font-black tracking-wider uppercase btn-hover">
                             Detalles
                         </button>
                     </td>
