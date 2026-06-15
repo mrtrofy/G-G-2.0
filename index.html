@@ -479,7 +479,7 @@
         
         function showToast(m, t) {
             const div = document.createElement('div');
-            div.className = `fixed top-10 right-10 p-5 rounded-2xl z-[1000] font-bold shadow-2xl transition-all animate-bounce ${t === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
+            div.className = `fixed top-10 right-10 p-5 rounded-2xl z-[1000] font-bold shadow-2xl transition-all ${t === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
             div.innerText = m;
             document.body.appendChild(div);
             setTimeout(() => div.remove(), 3000);
@@ -523,7 +523,6 @@
                 let ventasPagoMovil = 0;
                 let totalVentas = 0;
 
-                // 1. Calcular Gastos
                 const queryGastos = await getDocs(expensesRef);
                 queryGastos.forEach((doc) => {
                     const data = doc.data();
@@ -532,7 +531,6 @@
                     }
                 });
 
-                // 2. Calcular Ventas del Día para rellenar automáticamente la tabla
                 const queryVentas = await getDocs(salesRef);
                 const tbody = document.querySelector('#cierre-main-data-table tbody');
                 if (tbody) tbody.innerHTML = '';
@@ -549,7 +547,6 @@
                             });
                         }
 
-                        // Inyectar fila en los movimientos de la jornada
                         if (tbody) {
                             const tr = document.createElement('tr');
                             tr.className = "border-b border-zinc-900";
@@ -563,7 +560,6 @@
                     }
                 });
 
-                // Rellenar campos del panel
                 if (document.getElementById('cc-cash')) document.getElementById('cc-cash').value = ventasEfectivo.toFixed(2);
                 if (document.getElementById('cc-delivery')) document.getElementById('cc-delivery').value = ventasPagoMovil.toFixed(2);
                 if (document.getElementById('cc-total-ventas')) document.getElementById('cc-total-ventas').value = totalVentas.toFixed(2);
@@ -1227,32 +1223,6 @@
             if (event.ctrlKey && (event.key === 'U' || event.key === 'u')) {
                 event.preventDefault();
             }
-        });
-    </script>
-    <div id="loading-overlay" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-        <div class="glass-card p-10 rounded-3xl text-center border border-zinc-800">
-            <i data-lucide="loader" class="w-12 h-12 text-gold-text animate-spin mx-auto mb-4"></i>
-            <h3 class="text-white font-black text-xl uppercase">Procesando...</h3>
-        </div>
-    </div>
-
-    <script>
-        window.startLoadingLoop = () => {
-            const overlay = document.getElementById('loading-overlay');
-            overlay.classList.remove('hidden'); 
-            
-            setTimeout(() => {
-                overlay.classList.add('hidden'); 
-                if (window.lucide) lucide.createIcons();
-            }, 5000); 
-        };
-
-        document.querySelectorAll('button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (!btn.innerText.includes('Cerrar') && !btn.innerText.includes('VOLVER') && !btn.innerText.includes('Volver')) {
-                    window.startLoadingLoop();
-                }
-            });
         });
     </script>
 </body>
