@@ -733,8 +733,7 @@ window.loadCierresHistoricos = async () => {
     }
 };
 
-// Verifica la contraseña requerida
-// Solicita la contraseña secreta
+// 1. Función para solicitar la contraseña protegida
 window.solicitarClaveCierre = (fechaCierre) => {
     const password = prompt("🔐 Ingrese la contraseña de seguridad para ver el desglose diario:");
     if (password === "MIsREyes0803!") {
@@ -744,7 +743,7 @@ window.solicitarClaveCierre = (fechaCierre) => {
     }
 };
 
-// Busca la información en las ventas de Firebase y abre el modal descriptivo
+// 2. Función que consulta las ventas de ese día en Firebase y abre el modal
 window.abrirDetalleIndependiente = async (fechaCierre) => {
     const modal = document.getElementById('modal-detalle-dia');
     const title = document.getElementById('modal-detalle-dia-title');
@@ -753,12 +752,12 @@ window.abrirDetalleIndependiente = async (fechaCierre) => {
     if(!modal || !content) return;
     
     title.innerText = `Cierre de Caja - ${fechaCierre}`;
-    content.innerHTML = '<div class="p-8 text-center"><i data-lucide="loader" class="w-8 h-8 animate-spin mx-auto text-gold-text mb-2"></i><p class="text-xs text-zinc-500">Consultando base de datos...</p></div>';
+    content.innerHTML = '<div class="p-8 text-center"><i data-lucide="loader" class="w-8 h-8 animate-spin mx-auto text-gold-text mb-2"></i><p class="text-xs text-zinc-500">Consultando operaciones...</p></div>';
     modal.classList.add('active-modal');
     if (window.lucide) lucide.createIcons();
     
     try {
-        // Consultamos la colección de ventas globales (salesRef)
+        // Consultamos la colección global de ventas (salesRef)
         const snap = await getDocs(salesRef);
         let ventasDelDia = [];
         let resumenPagos = { 'USD': 0, 'Efectivo BS': 0, 'P. Móvil BS': 0, 'Zelle': 0 };
@@ -780,20 +779,20 @@ window.abrirDetalleIndependiente = async (fechaCierre) => {
         });
         
         if (ventasDelDia.length === 0) {
-            content.innerHTML = '<p class="text-center text-zinc-500 py-6 text-xs">No hay artículos ni transacciones registradas en este día.</p>';
+            content.innerHTML = '<p class="text-center text-zinc-500 py-6 text-xs">No hay transacciones registradas en este día.</p>';
             return;
         }
         
-        // Estructura limpia y minimalista alineada con tu diseño negro/dorado
+        // Estructura visual para la ventana independiente
         let html = `
             <div class="grid grid-cols-2 gap-2 mb-4">
                 <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-900">
-                    <span class="text-[10px] text-zinc-500 block uppercase font-bold tracking-wider">Total del Día</span>
-                    <span class="text-lg font-black text-emerald-400">$${granTotal.toFixed(2)}</span>
+                    <span class="text-[10px] text-zinc-500 block uppercase font-bold tracking-wider">Total Facturado</span>
+                    <span class="text-base font-black text-emerald-400">$${granTotal.toFixed(2)}</span>
                 </div>
                 <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-900">
-                    <span class="text-[10px] text-zinc-500 block uppercase font-bold tracking-wider">Transacciones</span>
-                    <span class="text-lg font-black text-white">${ventasDelDia.length}</span>
+                    <span class="text-[10px] text-zinc-500 block uppercase font-bold tracking-wider">Operaciones</span>
+                    <span class="text-base font-black text-white">${ventasDelDia.length}</span>
                 </div>
             </div>
             
@@ -817,7 +816,7 @@ window.abrirDetalleIndependiente = async (fechaCierre) => {
                 </div>
             </div>
             
-            <h4 class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Prendas / Artículos Vendidos:</h4>
+            <h4 class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Artículos Vendidos ese Día:</h4>
             <div class="max-h-40 overflow-y-auto space-y-1.5 pr-1">
         `;
         
@@ -827,8 +826,8 @@ window.abrirDetalleIndependiente = async (fechaCierre) => {
                     html += `
                         <div class="flex justify-between items-center bg-zinc-950 p-2.5 rounded-xl border border-zinc-900 text-xs">
                             <div>
-                                <p class="font-bold text-white uppercase">${item.name}</p>
-                                <p class="text-[10px] text-zinc-500">Cantidad vendida: x${item.qty}</p>
+                                <p class="font-bold text-white uppercase text-[11px]">${item.name}</p>
+                                <p class="text-[10px] text-zinc-500">Cantidad: x${item.qty}</p>
                             </div>
                             <span class="font-mono text-gold-text font-bold">$${(item.price * item.qty).toFixed(2)}</span>
                         </div>
@@ -843,7 +842,7 @@ window.abrirDetalleIndependiente = async (fechaCierre) => {
         
     } catch (err) {
         console.error(err);
-        content.innerHTML = '<p class="text-center text-red-400 p-4 text-xs">Error al leer las transacciones de Firebase.</p>';
+        content.innerHTML = '<p class="text-center text-red-400 p-4 text-xs">Error al leer los datos de Firebase.</p>';
     }
 };
     </script>
@@ -1368,13 +1367,13 @@ window.abrirDetalleIndependiente = async (fechaCierre) => {
             </div>
         </div>
     </div>
-    
+
    <div id="modal-detalle-dia" class="modal">
         <div class="glass-card w-full max-w-md p-6 rounded-3xl border border-zinc-800 shadow-2xl relative">
             <div class="flex justify-between items-center mb-4 border-b border-zinc-800/60 pb-3">
                 <h3 id="modal-detalle-dia-title" class="text-white font-black text-xs uppercase tracking-widest gold-text">Detalles de Venta</h3>
                 <button onclick="document.getElementById('modal-detalle-dia').classList.remove('active-modal')" class="text-zinc-500 hover:text-white p-1">
-                    <i data-lucide="x" class="w-4 h-4"></i>
+                    <i data-lucide=\"x\" class="w-4 h-4"></i>
                 </button>
             </div>
             
@@ -1382,7 +1381,7 @@ window.abrirDetalleIndependiente = async (fechaCierre) => {
             
             <div class="mt-5 pt-3 border-t border-zinc-800/60 flex">
                 <button onclick="document.getElementById('modal-detalle-dia').classList.remove('active-modal')" class="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-bold py-2.5 rounded-xl transition-colors text-xs uppercase tracking-widest border border-zinc-800">
-                    Cerrar Vista
+                    Cerrar Detalle
                 </button>
             </div>
         </div>
