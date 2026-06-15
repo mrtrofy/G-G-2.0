@@ -1203,46 +1203,6 @@
             </div>
         </div>
     </div>
-
-    <div id="loading-overlay" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-        <div class="glass-card p-10 rounded-3xl text-center border border-zinc-800">
-            <i data-lucide="loader" class="w-12 h-12 text-gold-text animate-spin mx-auto mb-4"></i>
-            <h3 class="text-white font-black text-xl uppercase tracking-widest">Procesando...</h3>
-            <p class="text-zinc-500 text-xs mt-2 font-mono">Para quitar el tiempo de espera actualize su base de datos por favor !</p>
-        </div>
-    </div>
-
-    <script>
-        window.startLoadingLoop = () => {
-            const overlay = document.getElementById('loading-overlay');
-            if (!overlay) return;
-            
-            overlay.classList.remove('hidden'); 
-            
-            setTimeout(() => {
-                overlay.classList.add('hidden'); 
-                if (window.lucide) lucide.createIcons();
-            }, 10000); 
-        };
-
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('button').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const texto = btn.innerText.toLowerCase();
-                    if (
-                        !texto.includes('cerrar') && 
-                        !texto.includes('volver') && 
-                        !texto.includes('cancelar') &&
-                        !btn.closest('.discount-btn') &&
-                        !btn.id.includes('pay-')
-                    ) {
-                        window.startLoadingLoop();
-                    }
-                });
-            });
-        });
-    </script>
-
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
