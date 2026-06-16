@@ -64,7 +64,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
             getFirestore, collection, addDoc, getDocs, doc, 
-            updateDoc, deleteDoc, onSnapshot, query, orderBy 
+            updateDoc, deleteDoc, onSnapshot, query, orderBy, setDoc
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -110,26 +110,25 @@
         };
 
         window.showView = (viewKey) => {
-    document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
-    const target = document.getElementById('view-' + viewKey);
-    if (target) {
-        target.classList.remove('hidden');
-        window.scrollTo(0,0);
-    }
+            document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
+            const target = document.getElementById('view-' + viewKey);
+            if (target) {
+                target.classList.remove('hidden');
+                window.scrollTo(0,0);
+            }
 
-    // MANDAMOS A EJECUTAR LAS MATEMÁTICAS Y EL HISTORIAL AL ENTRAR A LA VISTA
-    if (viewKey === 'closing' || viewKey === 'view-closing') {
-        if (typeof window.calcularGastosDelDiaCierre === 'function') {
-            window.calcularGastosDelDiaCierre(); 
-        } else if (typeof window.initCierreCaja === 'function') {
-            window.initCierreCaja(); 
-        }
-        
-        if (typeof window.loadClosuresHistory === 'function') {
-            window.loadClosuresHistory();
-        }
-    }
-};
+            if (viewKey === 'closing' || viewKey === 'view-closing') {
+                if (typeof window.calcularGastosDelDiaCierre === 'function') {
+                    window.calcularGastosDelDiaCierre(); 
+                } else if (typeof window.initCierreCaja === 'function') {
+                    window.initCierreCaja(); 
+                }
+                
+                if (typeof window.loadClosuresHistory === 'function') {
+                    window.loadClosuresHistory();
+                }
+            }
+        };
 
         window.selectStore = (storeNum) => {
             const passInput = document.getElementById(`store-pass-${storeNum}`);
@@ -147,21 +146,19 @@
             }
         };
 
-       function setupFirestoreRefs() {
-    if (!db) return;
-    productsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`);
-    salesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_sales`);
-    incidentsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_incidents`);
-    expensesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_expenses`);
-    
-    // Lo pegas aquí (sin el 'const' porque ya lo declaramos en el Paso 1)
-    closuresRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_cierres`);
+        function setupFirestoreRefs() {
+            if (!db) return;
+            productsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`);
+            salesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_sales`);
+            incidentsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_incidents`);
+            expensesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_expenses`);
+            closuresRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_cierres`);
 
-    onSnapshot(productsRef, (snapshot) => {
-        stock = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        updateManualSearchList();
-    });
-}
+            onSnapshot(productsRef, (snapshot) => {
+                stock = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateManualSearchList();
+            });
+        }
 
         function updateManualSearchList() {
             const select = document.getElementById('pos-manual-select');
@@ -237,45 +234,36 @@
             renderCart();
         };
 
-       window.calcularRestanteBs = () => {
-    // 1. Obtener el total neto de la venta actual (en USD)
-    const totalVenta = parseFloat(document.getElementById('cart-total').innerText) || 0;
-    
-    // 2. Obtener la tasa cargada en el input
-    const tasaElement = document.getElementById('tasa-bcv');
-    const tasa = tasaElement ? parseFloat(tasaElement.value) || 0 : 0;
-    if (tasa <= 0) return;
+        window.calcularRestanteBs = () => {
+            const totalVenta = parseFloat(document.getElementById('cart-total').innerText) || 0;
+            const tasaElement = document.getElementById('tasa-bcv');
+            const tasa = tasaElement ? parseFloat(tasaElement.value) || 0 : 0;
+            if (tasa <= 0) return;
 
-    // 3. Sumar todo lo que el cliente pague en Dólares (efectivo o Zelle)
-    let pagadoUSD = 0;
-    if (document.getElementById('pay-usd').checked) {
-        pagadoUSD += parseFloat(document.getElementById('amt-usd').value) || 0;
-    }
-    if (document.getElementById('pay-zelle').checked) {
-        pagadoUSD += parseFloat(document.getElementById('amt-zelle').value) || 0;
-    }
+            let pagadoUSD = 0;
+            if (document.getElementById('pay-usd').checked) {
+                pagadoUSD += parseFloat(document.getElementById('amt-usd').value) || 0;
+            }
+            if (document.getElementById('pay-zelle').checked) {
+                pagadoUSD += parseFloat(document.getElementById('amt-zelle').value) || 0;
+            }
 
-    // 4. Calcular la diferencia restante en USD
-    const restanteUSD = totalVenta - pagadoUSD;
+            const restanteUSD = totalVenta - pagadoUSD;
 
-    // 5. Si aún falta dinero por cubrir, lo convertimos automáticamente a Bolívares
-    if (restanteUSD > 0) {
-        const restanteBS = (restanteUSD * tasa).toFixed(2);
+            if (restanteUSD > 0) {
+                const restanteBS = (restanteUSD * tasa).toFixed(2);
 
-        // Si la casilla de Pago Móvil está marcada, se auto-llena con los Bs faltantes
-        if (document.getElementById('pay-mobile').checked) {
-            document.getElementById('amt-mobile').value = restanteBS;
-        } 
-        // Si no, si la casilla de Efectivo Bs está marcada, se llena esta
-        else if (document.getElementById('pay-cash').checked) {
-            document.getElementById('amt-cash').value = restanteBS;
-        }
-    } else {
-        // Si el pago en USD ya cubre o supera el total, vaciamos los campos de BS
-        if (document.getElementById('pay-mobile').checked) document.getElementById('amt-mobile').value = '';
-        if (document.getElementById('pay-cash').checked) document.getElementById('amt-cash').value = '';
-    }
-};
+                if (document.getElementById('pay-mobile').checked) {
+                    document.getElementById('amt-mobile').value = restanteBS;
+                } 
+                else if (document.getElementById('pay-cash').checked) {
+                    document.getElementById('amt-cash').value = restanteBS;
+                }
+            } else {
+                if (document.getElementById('pay-mobile').checked) document.getElementById('amt-mobile').value = '';
+                if (document.getElementById('pay-cash').checked) document.getElementById('amt-cash').value = '';
+            }
+        };
 
         window.finishSale = async () => {
             if (cart.length === 0) return showToast("El carrito está vacío", "error");
@@ -485,40 +473,38 @@
             }
         };
 
-       window.loadExpenses = async () => {
-    const container = document.getElementById('expenses-container');
-    if (!container) return;
-    
-    try {
-        const snap = await getDocs(expensesRef);
-        
-        if (snap.empty) {
-            container.innerHTML = '<p class="text-center p-10 text-zinc-500 text-xs font-bold uppercase tracking-widest">Sin gastos registrados hoy.</p>';
-            return;
-        }
-
-        container.innerHTML = snap.docs.map(doc => {
-            const e = doc.data();
-            const monto = parseFloat(e.amount || 0).toFixed(2);
+        window.loadExpenses = async () => {
+            const container = document.getElementById('expenses-container');
+            if (!container) return;
             
-            // Validamos qué formato de moneda usar en la tabla
-            const formatoMonto = e.currency === 'BS' ? `-${monto} Bs` : `-$${monto}`;
+            try {
+                const snap = await getDocs(expensesRef);
+                
+                if (snap.empty) {
+                    container.innerHTML = '<p class="text-center p-10 text-zinc-500 text-xs font-bold uppercase tracking-widest">Sin gastos registrados hoy.</p>';
+                    return;
+                }
 
-            return `
-                <div class="flex justify-between items-center p-4 border-b border-zinc-800/50 hover:bg-zinc-900/30 transition-colors">
-                    <div class="flex flex-col gap-0.5">
-                        <span class="font-bold text-white text-xs uppercase tracking-wide">${e.title || 'Sin concepto'}</span>
-                        <span class="text-[9px] text-zinc-500 font-medium font-mono">${e.date || ''}</span>
-                    </div>
-                    <span class="text-red-500 font-mono font-black text-sm">${formatoMonto}</span>
-                </div>
-            `;
-        }).join('');
-    } catch (e) { 
-        console.error(e);
-        container.innerHTML = '<p class="p-10 text-red-500 text-center text-xs">Error cargando historial de gastos.</p>'; 
-    }
-};
+                container.innerHTML = snap.docs.map(doc => {
+                    const e = doc.data();
+                    const monto = parseFloat(e.amount || 0).toFixed(2);
+                    const formatoMonto = e.currency === 'BS' ? `-${monto} Bs` : `-$${monto}`;
+
+                    return `
+                        <div class="flex justify-between items-center p-4 border-b border-zinc-800/50 hover:bg-zinc-900/30 transition-colors">
+                            <div class="flex flex-col gap-0.5">
+                                <span class="font-bold text-white text-xs uppercase tracking-wide">${e.title || 'Sin concepto'}</span>
+                                <span class="text-[9px] text-zinc-500 font-medium font-mono">${e.date || ''}</span>
+                            </div>
+                            <span class="text-red-500 font-mono font-black text-sm">${formatoMonto}</span>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) { 
+                console.error(e);
+                container.innerHTML = '<p class="p-10 text-red-500 text-center text-xs">Error cargando historial de gastos.</p>'; 
+            }
+        };
 
         window.loadIncidents = async () => {
             const container = document.getElementById('incidents-container');
@@ -568,39 +554,35 @@
 
         window.onload = () => lucide.createIcons();
 
-       window.saveGasto = async () => {
-    const titleValue = document.getElementById('expense-manual-title').value.trim();
-    const amountValue = parseFloat(document.getElementById('expense-manual-amount').value) || 0;
-    const currencyValue = document.getElementById('expense-manual-currency').value;
+        window.saveGasto = async () => {
+            const titleValue = document.getElementById('expense-manual-title').value.trim();
+            const amountValue = parseFloat(document.getElementById('expense-manual-amount').value) || 0;
+            const currencyValue = document.getElementById('expense-manual-currency').value;
 
-    // Validación: exigir concepto y monto mayor a cero
-    if (!titleValue || amountValue <= 0) {
-        return showToast("Por favor, ingrese un concepto y un monto válido", "error");
-    }
+            if (!titleValue || amountValue <= 0) {
+                return showToast("Por favor, ingrese un concepto y un monto válido", "error");
+            }
 
-    try {
-        await addDoc(expensesRef, {
-            title: titleValue,
-            amount: amountValue,
-            currency: currencyValue,
-            date: new Date().toLocaleDateString(),
-            timestamp: new Date().toISOString()
-        });
+            try {
+                await addDoc(expensesRef, {
+                    title: titleValue,
+                    amount: amountValue,
+                    currency: currencyValue,
+                    date: new Date().toLocaleDateString(),
+                    timestamp: new Date().toISOString()
+                });
 
-        showToast("Gasto Registrado con éxito", "success");
-        
-        // Limpiar los campos del formulario
-        document.getElementById('expense-manual-title').value = '';
-        document.getElementById('expense-manual-amount').value = '';
-        document.getElementById('expense-manual-currency').value = 'USD'; // Resetea a Dólares por defecto
+                showToast("Gasto Registrado con éxito", "success");
+                document.getElementById('expense-manual-title').value = '';
+                document.getElementById('expense-manual-amount').value = '';
+                document.getElementById('expense-manual-currency').value = 'USD';
 
-        // Recargar la tabla automáticamente
-        if (typeof window.loadExpenses === 'function') window.loadExpenses();
-    } catch (e) {
-        console.error(e);
-        showToast("Error al guardar el gasto", "error");
-    }
-};
+                if (typeof window.loadExpenses === 'function') window.loadExpenses();
+            } catch (e) {
+                console.error(e);
+                showToast("Error al guardar el gasto", "error");
+            }
+        };
 
         window.calcularGastosDelDiaCierre = async () => {
             try {
@@ -610,7 +592,6 @@
                 let ventasPagoMovil = 0;
                 let totalVentas = 0;
 
-                // 1. Calcular Gastos
                 const queryGastos = await getDocs(expensesRef);
                 queryGastos.forEach((doc) => {
                     const data = doc.data();
@@ -619,7 +600,6 @@
                     }
                 });
 
-                // 2. Calcular Ventas del Día para rellenar automáticamente la tabla
                 const queryVentas = await getDocs(salesRef);
                 const tbody = document.querySelector('#cierre-main-data-table tbody');
                 if (tbody) tbody.innerHTML = '';
@@ -636,7 +616,6 @@
                             });
                         }
 
-                        // Inyectar fila en los movimientos de la jornada
                         if (tbody) {
                             const tr = document.createElement('tr');
                             tr.className = "border-b border-zinc-900";
@@ -650,7 +629,6 @@
                     }
                 });
 
-                // Rellenar campos del panel
                 if (document.getElementById('cc-cash')) document.getElementById('cc-cash').value = ventasEfectivo.toFixed(2);
                 if (document.getElementById('cc-delivery')) document.getElementById('cc-delivery').value = ventasPagoMovil.toFixed(2);
                 if (document.getElementById('cc-total-ventas')) document.getElementById('cc-total-ventas').value = totalVentas.toFixed(2);
@@ -729,176 +707,166 @@
             }
         };
 
-        // Variable temporal para guardar el cálculo consolidado del día actual antes de subirlo
-let currentClosingData = null;
+        let currentClosingData = null;
 
-// 1. CALCULAR DE FORMA AUTOMÁTICA LOS NÚMEROS DEL DÍA ACTUAL
-window.initCierreCaja = async () => {
-    // Obtenemos la fecha de hoy en formato local (Ej: "15/6/2026")
-    const hoy = new Date().toLocaleDateString();
-    
-    // Mostramos la fecha en la interfaz
-    const dateLabel = document.getElementById('closing-current-date');
-    if (dateLabel) dateLabel.innerText = hoy;
+        window.initCierreCaja = async () => {
+            const hoy = new Date().toLocaleDateString();
+            const dateLabel = document.getElementById('closing-current-date');
+            if (dateLabel) dateLabel.innerText = hoy;
 
-    // Inicializamos contadores a cero
-    let vEfectivoUsd = 0, vEfectivoBs = 0, vPagoMovil = 0, vZelle = 0;
-    let gUsd = 0, gBs = 0;
+            let vEfectivoUsd = 0, vEfectivoBs = 0, vPagoMovil = 0, vZelle = 0;
+            let gUsd = 0, gBs = 0;
 
-    try {
-        // Consultar TODAS las ventas (ordersRef) para filtrar las de hoy
-        const salesSnap = await getDocs(salesRef); // Usa salesRef o ordersRef según tu variable
-        salesSnap.forEach(doc => {
-            const order = doc.data();
-            if (order.date === hoy) {
-                vEfectivoUsd += parseFloat(order.amtUsd || 0);
-                vEfectivoBs += parseFloat(order.amtCash || 0);
-                vPagoMovil += parseFloat(order.amtMobile || 0);
-                vZelle += parseFloat(order.amtZelle || 0);
+            try {
+                const salesSnap = await getDocs(salesRef); 
+                salesSnap.forEach(doc => {
+                    const order = doc.data();
+                    if (order.date === hoy) {
+                        if (order.payments && Array.isArray(order.payments)) {
+                            order.payments.forEach(p => {
+                                if (p.method === 'USD') vEfectivoUsd += parseFloat(p.amount || 0);
+                                if (p.method === 'Efectivo BS') vEfectivoBs += parseFloat(p.amount || 0);
+                                if (p.method === 'P. Móvil BS') vPagoMovil += parseFloat(p.amount || 0);
+                                if (p.method === 'Zelle') vZelle += parseFloat(p.amount || 0);
+                            });
+                        } else {
+                            vEfectivoUsd += parseFloat(order.amtUsd || 0);
+                            vEfectivoBs += parseFloat(order.amtCash || 0);
+                            vPagoMovil += parseFloat(order.amtMobile || 0);
+                            vZelle += parseFloat(order.amtZelle || 0);
+                        }
+                    }
+                });
+
+                const expensesSnap = await getDocs(expensesRef);
+                expensesSnap.forEach(doc => {
+                    const exp = doc.data();
+                    if (exp.date === hoy) {
+                        if (exp.currency === 'BS') {
+                            gBs += parseFloat(exp.amount || 0);
+                        } else {
+                            gUsd += parseFloat(exp.amount || 0);
+                        }
+                    }
+                });
+
+                const balanceUsd = (vEfectivoUsd + vZelle) - gUsd;
+                const balanceBs = (vEfectivoBs + vPagoMovil) - gBs;
+
+                if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$${vEfectivoUsd.toFixed(2)}`;
+                if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `${vEfectivoBs.toFixed(2)} Bs`;
+                if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `${vPagoMovil.toFixed(2)} Bs`;
+                if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$${vZelle.toFixed(2)}`;
+                
+                if (document.getElementById('close-expenses-usd')) document.getElementById('close-expenses-usd').innerText = `-$${gUsd.toFixed(2)}`;
+                if (document.getElementById('close-expenses-bs')) document.getElementById('close-expenses-bs').innerText = `-${gBs.toFixed(2)} Bs`;
+
+                if (document.getElementById('close-net-usd')) document.getElementById('close-net-usd').innerText = `$${balanceUsd.toFixed(2)}`;
+                if (document.getElementById('close-net-bs')) document.getElementById('close-net-bs').innerText = `${balanceBs.toFixed(2)} Bs`;
+
+                currentClosingData = {
+                    date: hoy,
+                    timestamp: new Date().toISOString(),
+                    sales: { usd: vEfectivoUsd, cashBs: vEfectivoBs, mobile: vPagoMovil, zelle: vZelle },
+                    expenses: { usd: gUsd, bs: gBs },
+                    net: { usd: balanceUsd, bs: balanceBs }
+                };
+
+            } catch (err) {
+                console.error("Error calculando cierre:", err);
+                showToast("Error al compilar datos del día", "error");
             }
-        });
-
-        // Consultar TODOS los gastos (expensesRef) para filtrar los de hoy
-        const expensesSnap = await getDocs(expensesRef);
-        expensesSnap.forEach(doc => {
-            const exp = doc.data();
-            if (exp.date === hoy) {
-                if (exp.currency === 'BS') {
-                    gBs += parseFloat(exp.amount || 0);
-                } else {
-                    gUsd += parseFloat(exp.amount || 0);
-                }
-            }
-        });
-
-        // Calcular balances netos automáticos (Ingresos menos Egresos)
-        const balanceUsd = (vEfectivoUsd + vZelle) - gUsd;
-        const balanceBs = (vEfectivoBs + vPagoMovil) - gBs;
-
-        // Pintar los datos calculados en las etiquetas del HTML
-        if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$${vEfectivoUsd.toFixed(2)}`;
-        if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `${vEfectivoBs.toFixed(2)} Bs`;
-        if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `${vPagoMovil.toFixed(2)} Bs`;
-        if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$${vZelle.toFixed(2)}`;
-        
-        if (document.getElementById('close-expenses-usd')) document.getElementById('close-expenses-usd').innerText = `-$${gUsd.toFixed(2)}`;
-        if (document.getElementById('close-expenses-bs')) document.getElementById('close-expenses-bs').innerText = `-${gBs.toFixed(2)} Bs`;
-
-        if (document.getElementById('close-net-usd')) document.getElementById('close-net-usd').innerText = `$${balanceUsd.toFixed(2)}`;
-        if (document.getElementById('close-net-bs')) document.getElementById('close-net-bs').innerText = `${balanceBs.toFixed(2)} Bs`;
-
-        // Guardamos la estructura limpia para Firebase
-        currentClosingData = {
-            date: hoy,
-            timestamp: new Date().toISOString(),
-            sales: { usd: vEfectivoUsd, cashBs: vEfectivoBs, mobile: vPagoMovil, zelle: vZelle },
-            expenses: { usd: gUsd, bs: gBs },
-            net: { usd: balanceUsd, bs: balanceBs }
         };
 
-    } catch (err) {
-        console.error("Error calculando cierre:", err);
-        showToast("Error al compilar datos del día", "error");
-    }
-};
+        window.ejecutarCierreCaja = async () => {
+            if (!currentClosingData) return showToast("No hay datos cargados para cerrar", "error");
 
-// 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
-window.ejecutarCierreCaja = async () => {
-    if (!currentClosingData) return showToast("No hay datos cargados para cerrar", "error");
+            try {
+                const docId = currentClosingData.date.replace(/\//g, "-");
+                await setDoc(doc(closuresRef, docId), currentClosingData);
 
-    try {
-        // Limpiamos los slashes "/" de la fecha para que sirva como un ID seguro en Firestore (Ej: "15-6-2026")
-        const docId = currentClosingData.date.replace(/\//g, "-");
-        
-        // Al usar setDoc con un ID fijo (la fecha), si se da click varias veces el mismo día,
-        // Firebase sobrescribe/actualiza los datos en lugar de crear una fila repetida.
-        await setDoc(doc(db, "cierres", docId), currentClosingData);
+                showToast(`Cierre de caja del día ${currentClosingData.date} procesado con éxito`, "success");
+                
+                window.loadClosuresHistory();
 
-        showToast(`Cierre de caja del día ${currentClosingData.date} procesado con éxito`, "success");
-        
-        // Recargar la tabla inferior de historial automáticamente
-        window.loadClosuresHistory();
-    } catch (err) {
-        console.error(err);
-        showToast("Error al guardar el cierre en Firebase", "error");
-    }
-};
+                // LIMITA EL ESTADO Y REDIRIGE AL LOGIN DONDE SE SELECCIONA LA SUCURSAL
+                currentStore = null;
+                cart = [];
+                currentDiscount = 0;
+                currentClosingData = null;
+                document.getElementById('store-pass-1').value = '';
+                document.getElementById('store-pass-2').value = '';
+                window.showView('login');
 
-// 3. CARGAR EL HISTORIAL EN LA TABLA (Sin repetir días)
-window.loadClosuresHistory = async () => {
-    const container = document.getElementById('closures-history-container');
-    if (!container) return;
+            } catch (err) {
+                console.error(err);
+                showToast("Error al guardar el cierre en Firebase", "error");
+            }
+        };
 
-    try {
-        const snap = await getDocs(closuresRef);
-        if (snap.empty) {
-            container.innerHTML = '<p class="text-center p-4 text-zinc-600 text-[10px] uppercase font-bold tracking-wider">No hay cierres registrados aún.</p>';
-            return;
-        }
+        window.loadClosuresHistory = async () => {
+            const container = document.getElementById('closures-history-container');
+            if (!container) return;
 
-        // Convertimos a array y ordenamos por fecha más reciente
-        const list = snap.docs.map(doc => doc.data()).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            try {
+                const snap = await getDocs(closuresRef);
+                if (snap.empty) {
+                    container.innerHTML = '<p class="text-center p-4 text-zinc-600 text-[10px] uppercase font-bold tracking-wider">No hay cierres registrados aún.</p>';
+                    return;
+                }
 
-        container.innerHTML = list.map(c => {
-            // Convertimos el objeto en texto plano seguro para pasarlo al botón por parámetro
-            const dataStr = encodeURIComponent(JSON.stringify(c));
+                const list = snap.docs.map(doc => doc.data()).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                container.innerHTML = list.map(c => {
+                    const dataStr = encodeURIComponent(JSON.stringify(c));
+                    return `
+                        <div class="grid grid-cols-2 items-center p-3 hover:bg-zinc-900/40 transition-colors border-b border-zinc-900/50">
+                            <span class="font-mono text-xs font-bold text-white uppercase tracking-wide">${c.date}</span>
+                            <div class="text-right">
+                                <button onclick="window.verDetallesCierre('${dataStr}')" class="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-amber-500 hover:border-amber-500/30 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg transition-all">
+                                    Detalles
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<p class="p-4 text-red-500 text-center text-[10px]">Error cargando historial.</p>';
+            }
+        };
+
+        window.verDetallesCierre = (dataStr) => {
+            const passwordInput = prompt("Ingrese la clave administrativa para ver los detalles:");
             
-            return `
-                <div class="grid grid-cols-2 items-center p-3 hover:bg-zinc-900/40 transition-colors border-b border-zinc-900/50">
-                    <span class="font-mono text-xs font-bold text-white uppercase tracking-wide">${c.date}</span>
-                    <div class="text-right">
-                        <button onclick="window.verDetallesCierre('${dataStr}')" class="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-amber-500 hover:border-amber-500/30 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg transition-all">
-                            Detalles
-                        </button>
-                    </div>
+            if (passwordInput !== PASS_MANAGEMENT) { 
+                return showToast("Contraseña incorrecta. Acceso denegado.", "error");
+            }
+
+            const c = JSON.parse(decodeURIComponent(dataStr));
+            document.getElementById('detail-closure-date').innerText = c.date;
+
+            document.getElementById('detail-closure-sales').innerHTML = `
+                <div class="flex justify-between text-zinc-400"><span>Efectivo ($):</span><span class="text-white font-bold">$${c.sales.usd.toFixed(2)}</span></div>
+                <div class="flex justify-between text-zinc-400"><span>Efectivo (Bs):</span><span class="text-white font-bold">${c.sales.cashBs.toFixed(2)} Bs</span></div>
+                <div class="flex justify-between text-zinc-400"><span>Pago Móvil (Bs):</span><span class="text-white font-bold">${c.sales.mobile.toFixed(2)} Bs</span></div>
+                <div class="flex justify-between text-zinc-400"><span>Zelle ($):</span><span class="text-white font-bold">$${c.sales.zelle.toFixed(2)}</span></div>
+            `;
+
+            document.getElementById('detail-closure-expenses').innerHTML = `
+                <div class="flex justify-between text-zinc-400"><span>Gastos ($):</span><span class="text-red-400 font-bold">-$${c.expenses.usd.toFixed(2)}</span></div>
+                <div class="flex justify-between text-zinc-400"><span>Gastos (Bs):</span><span class="text-red-400 font-bold">-${c.expenses.bs.toFixed(2)} Bs</span></div>
+                <div class="flex justify-between text-zinc-400 border-t border-zinc-900 pt-2 mt-2 font-bold">
+                    <span class="text-zinc-300">Neto USD:</span><span class="${c.net.usd >= 0 ? 'text-emerald-400':'text-red-500'}">$${c.net.usd.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-zinc-400 font-bold">
+                    <span class="text-zinc-300">Neto BS:</span><span class="${c.net.bs >= 0 ? 'text-emerald-400':'text-red-500'}">${c.net.bs.toFixed(2)} Bs</span>
                 </div>
             `;
-        }).join('');
-    } catch (err) {
-        console.error(err);
-        container.innerHTML = '<p class="p-4 text-red-500 text-center text-[10px]">Error cargando historial.</p>';
-    }
-};
 
-// 4. VER EL DESGLOSE COMPLETO SOLICITANDO LA CONTRASEÑA
-window.verDetallesCierre = (dataStr) => {
-    // Pedir contraseña en pantalla (Se usa la misma clave que usas para el admin/ventas)
-    const passwordInput = prompt("Ingrese la clave administrativa para ver los detalles:");
-    
-    // Cambia "1234" por la contraseña administrativa real de tus prototipos
-    if (passwordInput !== "1234") { 
-        return showToast("Contraseña incorrecta. Acceso denegado.", "error");
-    }
-
-    // Si la clave es correcta, parseamos los datos
-    const c = JSON.parse(decodeURIComponent(dataStr));
-    
-    document.getElementById('detail-closure-date').innerText = c.date;
-
-    // Rellenamos el desglose de Ventas en el modal
-    document.getElementById('detail-closure-sales').innerHTML = `
-        <div class="flex justify-between text-zinc-400"><span>Efectivo ($):</span><span class="text-white font-bold">$${c.sales.usd.toFixed(2)}</span></div>
-        <div class="flex justify-between text-zinc-400"><span>Efectivo (Bs):</span><span class="text-white font-bold">${c.sales.cashBs.toFixed(2)} Bs</span></div>
-        <div class="flex justify-between text-zinc-400"><span>Pago Móvil (Bs):</span><span class="text-white font-bold">${c.sales.mobile.toFixed(2)} Bs</span></div>
-        <div class="flex justify-between text-zinc-400"><span>Zelle ($):</span><span class="text-white font-bold">$${c.sales.zelle.toFixed(2)}</span></div>
-    `;
-
-    // Rellenamos el desglose de Gastos en el modal
-    document.getElementById('detail-closure-expenses').innerHTML = `
-        <div class="flex justify-between text-zinc-400"><span>Gastos ($):</span><span class="text-red-400 font-bold">-$${c.expenses.usd.toFixed(2)}</span></div>
-        <div class="flex justify-between text-zinc-400"><span>Gastos (Bs):</span><span class="text-red-400 font-bold">-${c.expenses.bs.toFixed(2)} Bs</span></div>
-        <div class="flex justify-between text-zinc-400 border-t border-zinc-900 pt-2 mt-2 font-bold">
-            <span class="text-zinc-300">Neto USD:</span><span class="${c.net.usd >= 0 ? 'text-emerald-400':'text-red-500'}">$${c.net.usd.toFixed(2)}</span>
-        </div>
-        <div class="flex justify-between text-zinc-400 font-bold">
-            <span class="text-zinc-300">Neto BS:</span><span class="${c.net.bs >= 0 ? 'text-emerald-400':'text-red-500'}">${c.net.bs.toFixed(2)} Bs</span>
-        </div>
-    `;
-
-    // Abrimos visualmente el modal añadiéndole la clase active-modal
-    const modal = document.getElementById('modal-closure-details');
-    if (modal) modal.classList.add('active-modal');
-};
+            const modal = document.getElementById('modal-closure-details');
+            if (modal) modal.classList.add('active-modal');
+        };
     </script>
 
     <div id="view-login" class="min-h-screen flex items-center justify-center p-6">
@@ -1009,40 +977,40 @@ window.verDetallesCierre = (dataStr) => {
                         <button onclick="setDiscount(0)" data-pct="0" class="discount-btn active">0%</button>
                     </div>
                 </div>
-<div class="glass-card p-4 rounded-2xl border border-zinc-800">
-    <div class="mb-4 bg-zinc-950 p-3 rounded-xl border border-zinc-900 flex justify-between items-center">
-        <span class="text-zinc-400 text-[11px] font-bold uppercase tracking-wider">Tasa BCV (Bs / $)</span>
-        <input type="number" id="tasa-bcv" value="40.00" step="0.01" oninput="calcularRestanteBs()" class="w-20 p-1 bg-black border border-zinc-800 rounded text-right font-mono text-xs text-amber-500 focus:border-amber-500 outline-none font-bold">
-    </div>
+                <div class="glass-card p-4 rounded-2xl border border-zinc-800">
+                    <div class="mb-4 bg-zinc-950 p-3 rounded-xl border border-zinc-900 flex justify-between items-center">
+                        <span class="text-zinc-400 text-[11px] font-bold uppercase tracking-wider">Tasa BCV (Bs / $)</span>
+                        <input type="number" id="tasa-bcv" value="40.00" step="0.01" oninput="calcularRestanteBs()" class="w-20 p-1 bg-black border border-zinc-800 rounded text-right font-mono text-xs text-amber-500 focus:border-amber-500 outline-none font-bold">
+                    </div>
 
-    <h3 class="text-xs font-bold uppercase text-zinc-500 mb-4">Métodos de pago y cantidades</h3>
-    <div class="space-y-3 text-[10px]">
-        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
-            <label class="flex items-center gap-2 w-24 cursor-pointer">
-                <input type="checkbox" id="pay-usd" onchange="document.getElementById('amt-usd').disabled = !this.checked; if(!this.checked) document.getElementById('amt-usd').value=''; calcularRestanteBs()"> USD
-            </label>
-            <input type="number" step="0.01" id="amt-usd" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none outline-none font-mono text-amber-400 font-bold" disabled>
-        </div>
-        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
-            <label class="flex items-center gap-2 w-24 cursor-pointer">
-                <input type="checkbox" id="pay-cash" onchange="document.getElementById('amt-cash').disabled = !this.checked; if(!this.checked) document.getElementById('amt-cash').value=''; calcularRestanteBs()"> EFECTIVO BS
-            </label>
-            <input type="number" step="0.01" id="amt-cash" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none outline-none font-mono text-emerald-400 font-bold" disabled>
-        </div>
-        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
-            <label class="flex items-center gap-2 w-24 cursor-pointer">
-                <input type="checkbox" id="pay-mobile" onchange="document.getElementById('amt-mobile').disabled = !this.checked; if(!this.checked) document.getElementById('amt-mobile').value=''; calcularRestanteBs()"> P. MÓVIL BS
-            </label>
-            <input type="number" step="0.01" id="amt-mobile" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none outline-none font-mono text-emerald-400 font-bold" disabled>
-        </div>
-        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
-            <label class="flex items-center gap-2 w-24 cursor-pointer">
-                <input type="checkbox" id="pay-zelle" onchange="document.getElementById('amt-zelle').disabled = !this.checked; if(!this.checked) document.getElementById('amt-zelle').value=''; calcularRestanteBs()"> ZELLE
-            </label>
-            <input type="number" step="0.01" id="amt-zelle" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none outline-none font-mono text-amber-400 font-bold" disabled>
-        </div>
-    </div>
-</div>
+                    <h3 class="text-xs font-bold uppercase text-zinc-500 mb-4">Métodos de pago y cantidades</h3>
+                    <div class="space-y-3 text-[10px]">
+                        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
+                            <label class="flex items-center gap-2 w-24 cursor-pointer">
+                                <input type="checkbox" id="pay-usd" onchange="document.getElementById('amt-usd').disabled = !this.checked; if(!this.checked) document.getElementById('amt-usd').value=''; calcularRestanteBs()"> USD
+                            </label>
+                            <input type="number" step="0.01" id="amt-usd" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none outline-none font-mono text-amber-400 font-bold" disabled>
+                        </div>
+                        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
+                            <label class="flex items-center gap-2 w-24 cursor-pointer">
+                                <input type="checkbox" id="pay-cash" onchange="document.getElementById('amt-cash').disabled = !this.checked; if(!this.checked) document.getElementById('amt-cash').value=''; calcularRestanteBs()"> EFECTIVO BS
+                            </label>
+                            <input type="number" step="0.01" id="amt-cash" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none outline-none font-mono text-emerald-400 font-bold" disabled>
+                        </div>
+                        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
+                            <label class="flex items-center gap-2 w-24 cursor-pointer">
+                                <input type="checkbox" id="pay-mobile" onchange="document.getElementById('amt-mobile').disabled = !this.checked; if(!this.checked) document.getElementById('amt-mobile').value=''; calcularRestanteBs()"> P. MÓVIL BS
+                            </label>
+                            <input type="number" step="0.01" id="amt-mobile" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none outline-none font-mono text-emerald-400 font-bold" disabled>
+                        </div>
+                        <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
+                            <label class="flex items-center gap-2 w-24 cursor-pointer">
+                                <input type="checkbox" id="pay-zelle" onchange="document.getElementById('amt-zelle').disabled = !this.checked; if(!this.checked) document.getElementById('amt-zelle').value=''; calcularRestanteBs()"> ZELLE
+                            </label>
+                            <input type="number" step="0.01" id="amt-zelle" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none outline-none font-mono text-amber-400 font-bold" disabled>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="lg:col-span-2 glass-card p-8 rounded-[2.5rem] flex flex-col min-h-[600px]">
                 <div id="cart-items" class="flex-1 overflow-y-auto mb-8"></div>
@@ -1227,18 +1195,18 @@ window.verDetallesCierre = (dataStr) => {
                         <input type="text" id="expense-manual-title" placeholder="ESCRIBE EL TÍTULO QUE TÚ QUIERAS..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono mt-1">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
-    <div>
-        <label class="text-[10px] text-zinc-500 uppercase font-bold">Monto del Gasto</label>
-        <input type="number" id="expense-manual-amount" placeholder="0.00" step="0.01" min="0" class="w-full p-3 bg-black border border-zinc-800 rounded-xl focus:border-red-500 text-sm font-bold text-white font-mono mt-1 outline-none">
-    </div>
-    <div>
-        <label class="text-[10px] text-zinc-500 uppercase font-bold">Moneda</label>
-        <select id="expense-manual-currency" class="w-full p-3 bg-black border border-zinc-800 rounded-xl focus:border-red-500 text-sm font-bold text-zinc-300 mt-1 outline-none appearance-none cursor-pointer">
-            <option value="USD" class="text-white">Dólares ($)</option>
-            <option value="BS" class="text-white">Bolívares (Bs)</option>
-        </select>
-    </div>
-</div>
+                        <div>
+                            <label class="text-[10px] text-zinc-500 uppercase font-bold">Monto del Gasto</label>
+                            <input type="number" id="expense-manual-amount" placeholder="0.00" step="0.01" min="0" class="w-full p-3 bg-black border border-zinc-800 rounded-xl focus:border-red-500 text-sm font-bold text-white font-mono mt-1 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-zinc-500 uppercase font-bold">Moneda</label>
+                            <select id="expense-manual-currency" class="w-full p-3 bg-black border border-zinc-800 rounded-xl focus:border-red-500 text-sm font-bold text-zinc-300 mt-1 outline-none appearance-none cursor-pointer">
+                                <option value="USD" class="text-white">Dólares ($)</option>
+                                <option value="BS" class="text-white">Bolívares (Bs)</option>
+                            </select>
+                        </div>
+                    </div>
                     <button onclick="saveGasto()" class="w-full gold-gradient text-black py-4 rounded-xl font-black text-xs btn-hover uppercase shadow-lg mt-2">
                         REGISTRAR GASTO
                     </button>
@@ -1284,77 +1252,76 @@ window.verDetallesCierre = (dataStr) => {
     </div>
 
     <div id="view-closing" class="hidden space-y-6">
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-black tracking-widest text-white uppercase border-l-4 border-amber-500 pl-3">Cierre de Caja del Día</h2>
-        <span id="closing-current-date" class="font-mono text-xs text-zinc-500 font-bold bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-900"></span>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="glass-card p-5 rounded-2xl border border-zinc-800 space-y-3">
-            <h3 class="text-xs font-black uppercase text-amber-500 tracking-wider mb-2">Resumen de Ventas Hoy</h3>
-            <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
-                <span class="text-zinc-400 font-bold">EFECTIVO ($):</span>
-                <span id="close-sales-usd" class="text-white font-black">$0.00</span>
-            </div>
-            <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
-                <span class="text-zinc-400 font-bold">EFECTIVO (Bs):</span>
-                <span id="close-sales-cash-bs" class="text-white font-black">0.00 Bs</span>
-            </div>
-            <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
-                <span class="text-zinc-400 font-bold">PAGO MÓVIL (Bs):</span>
-                <span id="close-sales-mobile" class="text-white font-black">0.00 Bs</span>
-            </div>
-            <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
-                <span class="text-zinc-400 font-bold">ZELLE ($):</span>
-                <span id="close-sales-zelle" class="text-white font-black">$0.00</span>
-            </div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-black tracking-widest text-white uppercase border-l-4 border-amber-500 pl-3">Cierre de Caja del Día</h2>
+            <span id="closing-current-date" class="font-mono text-xs text-zinc-500 font-bold bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-900"></span>
         </div>
 
-        <div class="glass-card p-5 rounded-2xl border border-zinc-800 flex flex-col justify-between">
-            <div>
-                <h3 class="text-xs font-black uppercase text-red-500 tracking-wider mb-3">Egresos / Gastos Hoy</h3>
-                <div class="grid grid-cols-2 gap-2 font-mono text-xs mb-4">
-                    <div class="bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 flex justify-between items-center">
-                        <span class="text-zinc-500 font-bold">TOTAL $:</span>
-                        <span id="close-expenses-usd" class="text-red-400 font-black">-$0.00</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="glass-card p-5 rounded-2xl border border-zinc-800 space-y-3">
+                <h3 class="text-xs font-black uppercase text-amber-500 tracking-wider mb-2">Resumen de Ventas Hoy</h3>
+                <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
+                    <span class="text-zinc-400 font-bold">EFECTIVO ($):</span>
+                    <span id="close-sales-usd" class="text-white font-black">$0.00</span>
+                </div>
+                <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
+                    <span class="text-zinc-400 font-bold">EFECTIVO (Bs):</span>
+                    <span id="close-sales-cash-bs" class="text-white font-black">0.00 Bs</span>
+                </div>
+                <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
+                    <span class="text-zinc-400 font-bold">PAGO MÓVIL (Bs):</span>
+                    <span id="close-sales-mobile" class="text-white font-black">0.00 Bs</span>
+                </div>
+                <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
+                    <span class="text-zinc-400 font-bold">ZELLE ($):</span>
+                    <span id="close-sales-zelle" class="text-white font-black">$0.00</span>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 rounded-2xl border border-zinc-800 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-xs font-black uppercase text-red-500 tracking-wider mb-3">Egresos / Gastos Hoy</h3>
+                    <div class="grid grid-cols-2 gap-2 font-mono text-xs mb-4">
+                        <div class="bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 flex justify-between items-center">
+                            <span class="text-zinc-500 font-bold">TOTAL $:</span>
+                            <span id="close-expenses-usd" class="text-red-400 font-black">-$0.00</span>
+                        </div>
+                        <div class="bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 flex justify-between items-center">
+                            <span class="text-zinc-500 font-bold">TOTAL Bs:</span>
+                            <span id="close-expenses-bs" class="text-red-400 font-black">-0.00 Bs</span>
+                        </div>
                     </div>
-                    <div class="bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 flex justify-between items-center">
-                        <span class="text-zinc-500 font-bold">TOTAL Bs:</span>
-                        <span id="close-expenses-bs" class="text-red-400 font-black">-0.00 Bs</span>
+                </div>
+
+                <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-900 space-y-1.5">
+                    <h4 class="text-[10px] font-bold uppercase text-zinc-500 tracking-widest">Resultado Neto del Día</h4>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-zinc-400">Balance USD ($):</span>
+                        <span id="close-net-usd" class="font-mono text-sm font-black text-emerald-400">$0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-zinc-400">Balance BS (Bs):</span>
+                        <span id="close-net-bs" class="font-mono text-sm font-black text-emerald-400">0.00 Bs</span>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-900 space-y-1.5">
-                <h4 class="text-[10px] font-bold uppercase text-zinc-500 tracking-widest">Resultado Neto del Día</h4>
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold text-zinc-400">Balance USD ($):</span>
-                    <span id="close-net-usd" class="font-mono text-sm font-black text-emerald-400">$0.00</span>
+        <button onclick="ejecutarCierreCaja()" class="w-full gold-gradient hover:opacity-90 text-black font-black py-4 rounded-xl transition-all text-xs uppercase tracking-widest shadow-lg shadow-amber-500/10">
+            Cerrar Caja de Hoy
+        </button>
+
+        <div class="glass-card p-5 rounded-2xl border border-zinc-800">
+            <h3 class="text-xs font-black uppercase text-zinc-400 tracking-wider mb-4">Historial de Cierres Consolidados</h3>
+            <div class="overflow-hidden rounded-xl border border-zinc-900 bg-black">
+                <div class="grid grid-cols-2 bg-zinc-950 p-3 text-[10px] font-black uppercase text-zinc-500 tracking-wider border-b border-zinc-900">
+                    <div>Fecha de Cierre</div>
+                    <div class="text-right">Acciones</div>
                 </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold text-zinc-400">Balance BS (Bs):</span>
-                    <span id="close-net-bs" class="font-mono text-sm font-black text-emerald-400">0.00 Bs</span>
-                </div>
+                <div id="closures-history-container" class="divide-y divide-zinc-900 max-h-60 overflow-y-auto"></div>
             </div>
         </div>
     </div>
-
-    <button onclick="ejecutarCierreCaja()" class="w-full gold-gradient hover:opacity-90 text-black font-black py-4 rounded-xl transition-all text-xs uppercase tracking-widest shadow-lg shadow-amber-500/10">
-        Cerrar Caja de Hoy
-    </button>
-
-    <div class="glass-card p-5 rounded-2xl border border-zinc-800">
-        <h3 class="text-xs font-black uppercase text-zinc-400 tracking-wider mb-4">Historial de Cierres Consolidados</h3>
-        <div class="overflow-hidden rounded-xl border border-zinc-900 bg-black">
-            <div class="grid grid-cols-2 bg-zinc-950 p-3 text-[10px] font-black uppercase text-zinc-500 tracking-wider border-b border-zinc-900">
-                <div>Fecha de Cierre</div>
-                <div class="text-right">Acciones</div>
-            </div>
-            <div id="closures-history-container" class="divide-y divide-zinc-900 max-h-60 overflow-y-auto">
-                </div>
-        </div>
-    </div>
-</div>
 
     <div id="modal-password" class="modal">
         <div class="glass-card p-10 rounded-[2.5rem] max-w-sm w-full border-t-4 border-gold-text">
@@ -1418,30 +1385,30 @@ window.verDetallesCierre = (dataStr) => {
     </div>
 
     <div id="modal-closure-details" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 pointer-events-none opacity-0 transition-all duration-300">
-    <div class="glass-card p-6 rounded-3xl border border-zinc-800 w-full max-w-md mx-4 space-y-4">
-        <div class="flex justify-between items-center border-b border-zinc-900 pb-3">
-            <h3 class="text-sm font-black text-white uppercase tracking-widest">Desglose del Día <span id="detail-closure-date" class="text-amber-500 font-mono"></span></h3>
-            <button onclick="document.getElementById('modal-closure-details').classList.remove('active-modal')" class="text-zinc-500 hover:text-white">
-                <i data-lucide="x" class="w-5 h-5"></i>
+        <div class="glass-card p-6 rounded-3xl border border-zinc-800 w-full max-w-md mx-4 space-y-4">
+            <div class="flex justify-between items-center border-b border-zinc-900 pb-3">
+                <h3 class="text-sm font-black text-white uppercase tracking-widest">Desglose del Día <span id="detail-closure-date" class="text-amber-500 font-mono"></span></h3>
+                <button onclick="document.getElementById('modal-closure-details').classList.remove('active-modal')" class="text-zinc-500 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4 text-xs max-h-96 overflow-y-auto pr-1">
+                <div>
+                    <h4 class="text-[10px] font-black uppercase text-amber-500 tracking-wider mb-2">Ventas Registradas</h4>
+                    <div id="detail-closure-sales" class="space-y-1.5 font-mono"></div>
+                </div>
+                <div>
+                    <h4 class="text-[10px] font-black uppercase text-red-500 tracking-wider mb-2">Gastos Registrados</h4>
+                    <div id="detail-closure-expenses" class="space-y-1.5 font-mono"></div>
+                </div>
+            </div>
+
+            <button onclick="document.getElementById('modal-closure-details').classList.remove('active-modal')" class="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-bold py-2.5 rounded-xl transition-colors text-xs uppercase tracking-widest border border-zinc-800 mt-2">
+                Cerrar Detalles
             </button>
         </div>
-        
-        <div class="space-y-4 text-xs max-h-96 overflow-y-auto pr-1">
-            <div>
-                <h4 class="text-[10px] font-black uppercase text-amber-500 tracking-wider mb-2">Ventas Registradas</h4>
-                <div id="detail-closure-sales" class="space-y-1.5 font-mono"></div>
-            </div>
-            <div>
-                <h4 class="text-[10px] font-black uppercase text-red-500 tracking-wider mb-2">Gastos Registrados</h4>
-                <div id="detail-closure-expenses" class="space-y-1.5 font-mono"></div>
-            </div>
-        </div>
-
-        <button onclick="document.getElementById('modal-closure-details').classList.remove('active-modal')" class="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-bold py-2.5 rounded-xl transition-colors text-xs uppercase tracking-widest border border-zinc-800 mt-2">
-            Cerrar Detalles
-        </button>
     </div>
-</div>
 
     <script>
       if ('serviceWorker' in navigator) {
