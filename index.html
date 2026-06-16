@@ -884,7 +884,8 @@ window.ejecutarCierreCaja = async () => {
 };
 
 // 4. FUNCIÓN PARA MOSTRAR LOS DETALLES DEL CIERRE SELECCIONADO EN EL MODAL
-    window.verDetallesCierre = (dataStr) => {
+   // 4. FUNCIÓN PARA MOSTRAR LOS DETALLES DEL CIERRE SELECCIONADO EN EL MODAL (CORREGIDA)
+window.verDetallesCierre = (dataStr) => {
     try {
         const closure = JSON.parse(decodeURIComponent(dataStr));
         
@@ -894,7 +895,7 @@ window.ejecutarCierreCaja = async () => {
 
         if (!salesContainer || !expensesContainer || !modal) return;
 
-        // Limpiamos y rellenamos las ventas del cierre
+        // Limpiamos y rellenamos las ventas del cierre guardado
         salesContainer.innerHTML = `
             <div class="flex justify-between border-b border-zinc-900 py-1 text-zinc-400"><span>Efectivo USD:</span><span class="text-emerald-500 font-bold">$${parseFloat(closure.salesUsd || 0).toFixed(2)}</span></div>
             <div class="flex justify-between border-b border-zinc-900 py-1 text-zinc-400"><span>Zelle USD:</span><span class="text-emerald-400 font-bold">$${parseFloat(closure.salesZelle || 0).toFixed(2)}</span></div>
@@ -902,15 +903,16 @@ window.ejecutarCierreCaja = async () => {
             <div class="flex justify-between py-1 text-zinc-400"><span>Pago Móvil Bs:</span><span class="text-amber-400 font-bold">${parseFloat(closure.salesMobile || 0).toFixed(2)} Bs</span></div>
         `;
 
-        // Rellenamos los totales o gastos vinculados si se guardaron en el objeto
+        // Rellenamos el cuadro de observaciones/gastos
         expensesContainer.innerHTML = `
             <div class="flex justify-between py-1 text-zinc-500 italic">
-                <span>Registro completado con éxito el día de la operación.</span>
+                <span>Registro consolidado de la sucursal.</span>
             </div>
         `;
 
-        // Mostramos el modal añadiendo la clase activa correspondiente a tu diseño
-        modal.classList.add('active-modal');
+        // CORRECCIÓN: Quitamos 'hidden' para que el modal aparezca en pantalla usando tu diseño nativo
+        modal.classList.remove('hidden');
+        
     } catch (e) {
         console.error("Error al desplegar los detalles del cierre:", e);
     }
