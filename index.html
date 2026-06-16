@@ -274,6 +274,12 @@
 };
 
         window.finishSale = async () => {
+            // Agrega esto al inicio de cada función que use la base de datos
+if (!currentStore || !db) {
+    showToast("Por favor, selecciona una tienda primero", "error");
+    return; // Detiene la ejecución aquí
+}
+            
             if (cart.length === 0) return showToast("El carrito está vacío", "error");
             
             const paymentDetails = [];
@@ -338,6 +344,11 @@
         };
 
         window.loadSales = async () => {
+            // Agrega esto al inicio de cada función que use la base de datos
+if (!currentStore || !db) {
+    showToast("Por favor, selecciona una tienda primero", "error");
+    return; // Detiene la ejecución aquí
+}
             const container = document.getElementById('sales-container');
             container.innerHTML = '<div class="p-10 text-center"><i data-lucide="loader" class="w-8 h-8 animate-spin mx-auto text-gold-text"></i></div>';
             lucide.createIcons();
@@ -418,6 +429,11 @@
         }
 
         window.saveNewItem = async () => {
+            // Agrega esto al inicio de cada función que use la base de datos
+if (!currentStore || !db) {
+    showToast("Por favor, selecciona una tienda primero", "error");
+    return; // Detiene la ejecución aquí
+}
             const data = {
                 barcode: document.getElementById('ni-barcode').value,
                 name: document.getElementById('ni-name').value,
