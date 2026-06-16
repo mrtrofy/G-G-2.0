@@ -213,51 +213,51 @@
             document.getElementById('cart-discount-val').innerText = discountVal.toFixed(2);
             document.getElementById('cart-total').innerText = (subtotal - discountVal).toFixed(2);
             lucide.createIcons();
+            if (typeof window.calcularRestanteBs === 'function') window.calcularRestanteBs();
         }
 
         window.removeFromCart = (idx) => {
             cart.splice(idx, 1);
             renderCart();
-            if (typeof calcularRestanteBs === 'function') calcularRestanteBs();
         };
 
-        window.calcularRestanteBs = () => {
-    // 1. Obtener los totales y la tasa
+       window.calcularRestanteBs = () => {
+    // 1. Obtener el total neto de la venta actual (en USD)
     const totalVenta = parseFloat(document.getElementById('cart-total').innerText) || 0;
-    const tasaDiaria = parseFloat(document.getElementById('tasa-bcv').value) || 1;
     
-    // 2. Sumar lo que ya se está pagando en divisas (Efectivo USD o Zelle)
-    let pagadoDivisas = 0;
+    // 2. Obtener la tasa cargada en el input
+    const tasaElement = document.getElementById('tasa-bcv');
+    const tasa = tasaElement ? parseFloat(tasaElement.value) || 0 : 0;
+    if (tasa <= 0) return;
+
+    // 3. Sumar todo lo que el cliente pague en Dólares (efectivo o Zelle)
+    let pagadoUSD = 0;
     if (document.getElementById('pay-usd').checked) {
-        pagadoDivisas += parseFloat(document.getElementById('amt-usd').value) || 0;
+        pagadoUSD += parseFloat(document.getElementById('amt-usd').value) || 0;
     }
     if (document.getElementById('pay-zelle').checked) {
-        pagadoDivisas += parseFloat(document.getElementById('amt-zelle').value) || 0;
+        pagadoUSD += parseFloat(document.getElementById('amt-zelle').value) || 0;
     }
 
-    // 3. Calcular cuánto falta por pagar en dólares
-    const restanteUSD = totalVenta - pagadoDivisas;
+    // 4. Calcular la diferencia restante en USD
+    const restanteUSD = totalVenta - pagadoUSD;
 
-    // 4. Si falta dinero, lo convertimos a Bolívares y llenamos las casillas
+    // 5. Si aún falta dinero por cubrir, lo convertimos automáticamente a Bolívares
     if (restanteUSD > 0) {
-        const restanteBS = (restanteUSD * tasaDiaria).toFixed(2);
-        
-        // Autocompleta Pago Móvil si está marcado
-        if (document.getElementById('pay-mobile').checked && !document.getElementById('pay-cash').checked) {
+        const restanteBS = (restanteUSD * tasa).toFixed(2);
+
+        // Si la casilla de Pago Móvil está marcada, se auto-llena con los Bs faltantes
+        if (document.getElementById('pay-mobile').checked) {
             document.getElementById('amt-mobile').value = restanteBS;
         } 
-        // Autocompleta Efectivo BS si está marcado
-        else if (document.getElementById('pay-cash').checked && !document.getElementById('pay-mobile').checked) {
+        // Si no, si la casilla de Efectivo Bs está marcada, se llena esta
+        else if (document.getElementById('pay-cash').checked) {
             document.getElementById('amt-cash').value = restanteBS;
         }
     } else {
-        // Si ya se pagó todo o sobra en USD, limpia las casillas de BS si están vacías o autocompletadas
-        if (document.getElementById('pay-mobile').checked && (parseFloat(document.getElementById('amt-mobile').value) || 0) > 0) {
-           document.getElementById('amt-mobile').value = "";
-        }
-        if (document.getElementById('pay-cash').checked && (parseFloat(document.getElementById('amt-cash').value) || 0) > 0) {
-           document.getElementById('amt-cash').value = "";
-        }
+        // Si el pago en USD ya cubre o supera el total, vaciamos los campos de BS
+        if (document.getElementById('pay-mobile').checked) document.getElementById('amt-mobile').value = '';
+        if (document.getElementById('pay-cash').checked) document.getElementById('amt-cash').value = '';
     }
 };
 
@@ -792,35 +792,37 @@
                         <button onclick="setDiscount(0)" data-pct="0" class="discount-btn active">0%</button>
                     </div>
                 </div>
-               <div class="glass-card p-8 rounded-3xl">
-    <h3 class="text-xs font-bold uppercase text-zinc-500 mb-2">Tasa de Cambio (BS)</h3>
-    <input type="number" id="tasa-bcv" value="39.00" step="0.01" oninput="calcularRestanteBs()" class="w-full p-3 mb-5 bg-black border border-zinc-800 rounded-xl text-white text-sm focus:border-gold-text text-right font-mono" placeholder="Ej: 39.50">
+<div class="glass-card p-4 rounded-2xl border border-zinc-800">
+    <div class="mb-4 bg-zinc-950 p-3 rounded-xl border border-zinc-900 flex justify-between items-center">
+        <span class="text-zinc-400 text-[11px] font-bold uppercase tracking-wider">Tasa BCV (Bs / $)</span>
+        <input type="number" id="tasa-bcv" value="40.00" step="0.01" oninput="calcularRestanteBs()" class="w-20 p-1 bg-black border border-zinc-800 rounded text-right font-mono text-xs text-amber-500 focus:border-amber-500 outline-none font-bold">
+    </div>
 
-    <h3 class="text-xs font-bold uppercase text-zinc-500 mb-5">Métodos de pago y cantidades</h3>
+    <h3 class="text-xs font-bold uppercase text-zinc-500 mb-4">Métodos de pago y cantidades</h3>
     <div class="space-y-3 text-[10px]">
         <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
             <label class="flex items-center gap-2 w-24 cursor-pointer">
-                <input type="checkbox" id="pay-usd" onchange="document.getElementById('amt-usd').disabled = !this.checked; calcularRestanteBs()"> USD
+                <input type="checkbox" id="pay-usd" onchange="document.getElementById('amt-usd').disabled = !this.checked; if(!this.checked) document.getElementById('amt-usd').value=''; calcularRestanteBs()"> USD
             </label>
-            <input type="number" step="0.01" id="amt-usd" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none" disabled>
+            <input type="number" step="0.01" id="amt-usd" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none outline-none font-mono text-amber-400 font-bold" disabled>
         </div>
         <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
             <label class="flex items-center gap-2 w-24 cursor-pointer">
-                <input type="checkbox" id="pay-cash" onchange="document.getElementById('amt-cash').disabled = !this.checked; calcularRestanteBs()"> EFECTIVO BS
+                <input type="checkbox" id="pay-cash" onchange="document.getElementById('amt-cash').disabled = !this.checked; if(!this.checked) document.getElementById('amt-cash').value=''; calcularRestanteBs()"> EFECTIVO BS
             </label>
-            <input type="number" step="0.01" id="amt-cash" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
+            <input type="number" step="0.01" id="amt-cash" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none outline-none font-mono text-emerald-400 font-bold" disabled>
         </div>
         <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
             <label class="flex items-center gap-2 w-24 cursor-pointer">
-                <input type="checkbox" id="pay-mobile" onchange="document.getElementById('amt-mobile').disabled = !this.checked; calcularRestanteBs()"> P. MÓVIL BS
+                <input type="checkbox" id="pay-mobile" onchange="document.getElementById('amt-mobile').disabled = !this.checked; if(!this.checked) document.getElementById('amt-mobile').value=''; calcularRestanteBs()"> P. MÓVIL BS
             </label>
-            <input type="number" step="0.01" id="amt-mobile" placeholder="0.00" class="flex-1 p-1 text-right bg-black border-none" disabled>
+            <input type="number" step="0.01" id="amt-mobile" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none outline-none font-mono text-emerald-400 font-bold" disabled>
         </div>
         <div class="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800">
             <label class="flex items-center gap-2 w-24 cursor-pointer">
-                <input type="checkbox" id="pay-zelle" onchange="document.getElementById('amt-zelle').disabled = !this.checked; calcularRestanteBs()"> ZELLE
+                <input type="checkbox" id="pay-zelle" onchange="document.getElementById('amt-zelle').disabled = !this.checked; if(!this.checked) document.getElementById('amt-zelle').value=''; calcularRestanteBs()"> ZELLE
             </label>
-            <input type="number" step="0.01" id="amt-zelle" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none" disabled>
+            <input type="number" step="0.01" id="amt-zelle" placeholder="0.00" oninput="calcularRestanteBs()" class="flex-1 p-1 text-right bg-black border-none outline-none font-mono text-amber-400 font-bold" disabled>
         </div>
     </div>
 </div>
