@@ -1191,31 +1191,5 @@
             }
         });
     </script>
-    <div id="loading-overlay" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-        <div class="glass-card p-10 rounded-3xl text-center border border-zinc-800">
-            <i data-lucide="loader" class="w-12 h-12 text-gold-text animate-spin mx-auto mb-4"></i>
-            <h3 class="text-white font-black text-xl uppercase">Procesando...</h3>
-        </div>
-    </div>
-
-    <script>
-        window.startLoadingLoop = () => {
-            const overlay = document.getElementById('loading-overlay');
-            overlay.classList.remove('hidden'); 
-            
-            setTimeout(() => {
-                overlay.classList.add('hidden'); 
-                if (window.lucide) lucide.createIcons();
-            }, 5000); 
-        };
-
-        document.querySelectorAll('button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (!btn.innerText.includes('Cerrar') && !btn.innerText.includes('VOLVER') && !btn.innerText.includes('Volver')) {
-                    window.startLoadingLoop();
-                }
-            });
-        });
-    </script>
 </body>
 </html>
