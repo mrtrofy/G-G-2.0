@@ -109,25 +109,21 @@
             lucide.createIcons();
         };
 
-        window.showView = (viewKey) => {
+       window.showView = (viewKey) => {
+    // 1. Ocultar todas las vistas
     document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
+    
+    // 2. Mostrar la vista seleccionada
     const target = document.getElementById('view-' + viewKey);
     if (target) {
         target.classList.remove('hidden');
         window.scrollTo(0,0);
     }
 
-    // MANDAMOS A EJECUTAR LAS MATEMÁTICAS Y EL HISTORIAL AL ENTRAR A LA VISTA
-    if (viewKey === 'closing' || viewKey === 'view-closing') {
-        if (typeof window.calcularGastosDelDiaCierre === 'function') {
-            window.calcularGastosDelDiaCierre(); 
-        } else if (typeof window.initCierreCaja === 'function') {
-            window.initCierreCaja(); 
-        }
-        
-        if (typeof window.loadClosuresHistory === 'function') {
-            window.loadClosuresHistory();
-        }
+    // 3. NUEVA LÍNEA: Si entramos a 'closing', cargamos los datos obligatoriamente
+    if (viewKey === 'closing') {
+        console.log("Cargando datos de cierre...");
+        window.initCierreCaja();
     }
 };
 
@@ -733,22 +729,21 @@
 let currentClosingData = null;
 
 // 1. CALCULAR DE FORMA AUTOMÁTICA LOS NÚMEROS DEL DÍA ACTUAL
-window.initCierreCaja = async () => {
-    // 1. Usamos el formato YYYY-MM-DD para evitar errores de cambio de idioma/región en fechas
-    const hoy = new Date().toLocaleDateString(); 
-    const dateLabel = document.getElementById('closing-current-date');
-    if (dateLabel) dateLabel.innerText = hoy;
+   window.initCierreCaja = async () => {
+    const hoy = new Date().toLocaleDateString();
+    console.log("Fecha actual que buscamos:", hoy); // Verás esto en la consola F12
 
     let vEfectivoUsd = 0, vEfectivoBs = 0, vPagoMovil = 0, vZelle = 0;
-    let gUsd = 0, gBs = 0;
-
+    
     try {
         const salesSnap = await getDocs(salesRef);
+        console.log("Total de ventas en DB:", salesSnap.size); // ¿Cuántas ventas hay en total?
+
         salesSnap.forEach(doc => {
             const order = doc.data();
-            // Comparar fecha
+            console.log("Comparando:", order.date, "con", hoy); // Verás si coinciden las fechas
+            
             if (order.date === hoy && order.payments) {
-                // RECORREMOS EL ARREGLO DE PAGOS (Aquí está la corrección)
                 order.payments.forEach(p => {
                     if (p.method === 'USD') vEfectivoUsd += parseFloat(p.amount || 0);
                     if (p.method === 'Efectivo BS') vEfectivoBs += parseFloat(p.amount || 0);
@@ -758,30 +753,14 @@ window.initCierreCaja = async () => {
             }
         });
 
-        const expensesSnap = await getDocs(expensesRef);
-        expensesSnap.forEach(doc => {
-            const exp = doc.data();
-            if (exp.date === hoy) {
-                if (exp.currency === 'BS') {
-                    gBs += parseFloat(exp.amount || 0);
-                } else {
-                    gUsd += parseFloat(exp.amount || 0);
-                }
-            }
-        });
-
-        // Actualizamos los campos en pantalla
-        if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$${vEfectivoUsd.toFixed(2)}`;
-        if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `${vEfectivoBs.toFixed(2)} Bs`;
-        if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `${vPagoMovil.toFixed(2)} Bs`;
-        if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$${vZelle.toFixed(2)}`;
+        // Actualización de pantalla
+        document.getElementById('close-sales-usd').innerText = `$${vEfectivoUsd.toFixed(2)}`;
+        // ... (resto de tus líneas de actualización)
         
-        // ... (resto de la lógica de balance)
     } catch (e) {
-        console.error("Error al calcular el cierre:", e);
+        console.error("Error crítico:", e);
     }
 };
-
 // 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
 window.ejecutarCierreCaja = async () => {
     if (!currentClosingData) return showToast("No hay datos cargados para cerrar", "error");
@@ -1431,26 +1410,6 @@ window.verDetallesCierre = (dataStr) => {
             .catch(err => console.warn('Error al registrar el Service Worker', err));
         });
       }
-    </script>
-    <script>
-        document.addEventListener('contextmenu', (event) => {
-            event.preventDefault();
-        });
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'F12') {
-                event.preventDefault();
-            }
-            if (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'J' || event.key === 'i' || event.key === 'j')) {
-                event.preventDefault();
-            }
-            if (event.ctrlKey && event.shiftKey && (event.key === 'C' || event.key === 'c')) {
-                event.preventDefault();
-            }
-            if (event.ctrlKey && (event.key === 'U' || event.key === 'u')) {
-                event.preventDefault();
-            }
-        });
     </script>
 </body>
 </html>
