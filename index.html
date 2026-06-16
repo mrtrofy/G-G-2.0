@@ -745,21 +745,33 @@ if (!currentStore || !db) {
 let currentClosingData = null;
 
 // 1. CALCULAR DE FORMA AUTOMÁTICA LOS NÚMEROS DEL DÍA ACTUAL
-   window.initCierreCaja = async () => {
+  window.initCierreCaja = async () => {
     const hoy = new Date().toLocaleDateString();
-    console.log("Fecha actual que buscamos:", hoy); // Verás esto en la consola F12
+    console.log("Fecha actual que buscamos:", hoy);
 
     let vEfectivoUsd = 0, vEfectivoBs = 0, vPagoMovil = 0, vZelle = 0;
     
+    // Función interna para normalizar y comparar fechas sin importar el orden de día/mes
+    const sonMismaFecha = (f1, f2) => {
+        if (!f1 || !f2) return false;
+        const p1 = f1.split('/').map(Number);
+        const p2 = f2.split('/').map(Number);
+        if (p1.length < 3 || p2.length < 3) return f1 === f2;
+        const sortParts = (p) => {
+            const y = p.find(n => n > 2000) || 0;
+            const o = p.filter(n => n <= 2000).sort((a, b) => a - b);
+            return `${o[0]}-${o[1]}-${y}`;
+        };
+        return sortParts(p1) === sortParts(p2);
+    };
+
     try {
+        if (!salesRef) return;
         const salesSnap = await getDocs(salesRef);
-        console.log("Total de ventas en DB:", salesSnap.size); // ¿Cuántas ventas hay en total?
 
         salesSnap.forEach(doc => {
             const order = doc.data();
-            console.log("Comparando:", order.date, "con", hoy); // Verás si coinciden las fechas
-            
-            if (order.date === hoy && order.payments) {
+            if (order.date && sonMismaFecha(order.date, hoy) && order.payments) {
                 order.payments.forEach(p => {
                     if (p.method === 'USD') vEfectivoUsd += parseFloat(p.amount || 0);
                     if (p.method === 'Efectivo BS') vEfectivoBs += parseFloat(p.amount || 0);
@@ -769,32 +781,52 @@ let currentClosingData = null;
             }
         });
 
-        // Actualización de pantalla
-        document.getElementById('close-sales-usd').innerText = `$${vEfectivoUsd.toFixed(2)}`;
-        // ... (resto de tus líneas de actualización)
+        // Guardamos los datos calculados en el objeto global para que ejecutarCierreCaja los use
+        currentClosingData = {
+            date: hoy,
+            salesUsd: vEfectivoUsd,
+            salesCashBs: vEfectivoBs,
+            salesMobile: vPagoMovil,
+            salesZelle: vZelle,
+            timestamp: new Date().getTime()
+        };
+
+        // Actualización segura de los elementos de la interfaz en pantalla
+        if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$${vEfectivoUsd.toFixed(2)}`;
+        if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `${vEfectivoBs.toFixed(2)} Bs`;
+        if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `${vPagoMovil.toFixed(2)} Bs`;
+        if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$${vZelle.toFixed(2)}`;
+        
+        if (document.getElementById('closing-current-date')) {
+            document.getElementById('closing-current-date').innerText = hoy;
+        }
+
+        // Cargamos el historial de cierres guardados en la tabla inferior
+        window.loadClosuresHistory();
         
     } catch (e) {
-        console.error("Error crítico:", e);
+        console.error("Error crítico en initCierreCaja:", e);
     }
 };
 // 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
 window.ejecutarCierreCaja = async () => {
     if (!currentClosingData) return showToast("No hay datos cargados para cerrar", "error");
+    if (!closuresRef) return showToast("Error: Referencia de base de datos no lista", "error");
 
     try {
-        // Limpiamos los slashes "/" de la fecha para que sirva como un ID seguro en Firestore (Ej: "15-6-2026")
+        // Usamos la fecha limpia como identificador de documento único por día
         const docId = currentClosingData.date.replace(/\//g, "-");
         
-        // Al usar setDoc con un ID fijo (la fecha), si se da click varias veces el mismo día,
-        // Firebase sobrescribe/actualiza los datos en lugar de crear una fila repetida.
-        await setDoc(doc(db, "cierres", docId), currentClosingData);
+        // CORRECCIÓN: Apuntar al documento dentro de la colección específica 'closuresRef' de la tienda activa
+        const docSecureRef = doc(closuresRef, docId);
+        await setDoc(docSecureRef, currentClosingData);
 
         showToast(`Cierre de caja del día ${currentClosingData.date} procesado con éxito`, "success");
         
         // Recargar la tabla inferior de historial automáticamente
         window.loadClosuresHistory();
     } catch (err) {
-        console.error(err);
+        console.error("Error al guardar cierre:", err);
         showToast("Error al guardar el cierre en Firebase", "error");
     }
 };
@@ -805,33 +837,39 @@ window.loadClosuresHistory = async () => {
     if (!container) return;
 
     try {
+        if (!closuresRef) return;
         const snap = await getDocs(closuresRef);
+        
         if (snap.empty) {
-            container.innerHTML = '<p class="text-center p-4 text-zinc-600 text-[10px] uppercase font-bold tracking-wider">No hay cierres registrados aún.</p>';
+            container.innerHTML = '<tr><td colspan="3" class="text-center p-4 text-zinc-600 text-[10px] uppercase font-bold tracking-wider">No hay cierres registrados aún.</td></tr>';
             return;
         }
 
-        // Convertimos a array y ordenamos por fecha más reciente
-        const list = snap.docs.map(doc => doc.data()).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+        let docsArr = [];
+        snap.forEach(doc => {
+            docsArr.push({ id: doc.id, ...doc.data() });
+        });
 
-        container.innerHTML = list.map(c => {
-            // Convertimos el objeto en texto plano seguro para pasarlo al botón por parámetro
-            const dataStr = encodeURIComponent(JSON.stringify(c));
-            
-            return `
-                <div class="grid grid-cols-2 items-center p-3 hover:bg-zinc-900/40 transition-colors border-b border-zinc-900/50">
-                    <span class="font-mono text-xs font-bold text-white uppercase tracking-wide">${c.date}</span>
-                    <div class="text-right">
-                        <button onclick="window.verDetallesCierre('${dataStr}')" class="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-amber-500 hover:border-amber-500/30 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg transition-all">
-                            Detalles
-                        </button>
-                    </div>
-                </div>
+        // Ordenamos por timestamp descendente para ver el más nuevo primero
+        docsArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        let html = "";
+        docsArr.forEach(c => {
+            const totalUSD = (parseFloat(c.salesUsd || 0) + parseFloat(c.salesZelle || 0)).toFixed(2);
+            const totalBS = (parseFloat(c.salesCashBs || 0) + parseFloat(c.salesMobile || 0)).toFixed(2);
+
+            html += `
+            <tr class="border-b border-zinc-900/50 hover:bg-zinc-900/20 font-mono text-[11px] transition-colors">
+                <td class="p-3 text-zinc-400 font-bold">${c.date}</td>
+                <td class="p-3 text-emerald-500 font-bold">$${totalUSD}</td>
+                <td class="p-3 text-amber-500 font-bold">${totalBS} Bs</td>
+            </tr>
             `;
-        }).join('');
+        });
+
+        container.innerHTML = html;
     } catch (err) {
-        console.error(err);
-        container.innerHTML = '<p class="p-4 text-red-500 text-center text-[10px]">Error cargando historial.</p>';
+        console.error("Error al cargar historial de cierres:", err);
     }
 };
 
