@@ -284,6 +284,36 @@
             }
         };
 
+        window.loadSales = async () => {
+            const container = document.getElementById('sales-container');
+            container.innerHTML = '<div class="p-10 text-center"><i data-lucide="loader" class="w-8 h-8 animate-spin mx-auto text-gold-text"></i></div>';
+            lucide.createIcons();
+            try {
+                const q = query(salesRef, orderBy("timestamp", "desc"));
+                const snap = await getDocs(q);
+                if (snap.empty) {
+                    container.innerHTML = '<p class="text-center p-10 text-zinc-500">No hay ventas registradas.</p>';
+                    return;
+                }
+                let html = '<table class="w-full text-left text-sm"><thead><tr class="text-zinc-500 border-b border-zinc-800"><th class="p-4">Fecha/Hora</th><th class="p-4">Items</th><th class="p-4">Desglose de Pago</th><th class="p-4 text-right">Total</th></tr></thead><tbody>';
+                snap.forEach(doc => {
+                    const s = doc.data();
+                    const pagosHtml = s.payments ? s.payments.map(p => 
+                        `<span class="text-[9px] bg-zinc-800 px-2 py-1 rounded text-gold-text mr-1">${p.method}: $${p.amount.toFixed(2)}</span>`
+                    ).join('') : '<span class="text-zinc-600">Sin datos</span>';
+
+                    html += `<tr class="border-b border-zinc-900">
+                        <td class="p-4 font-mono text-[10px]">${new Date(s.timestamp).toLocaleString()}</td>
+                        <td class="p-4 text-zinc-400 text-xs">${s.items.map(i => `${i.name} (x${i.qty})`).join(', ')}</td>
+                        <td class="p-4">${pagosHtml}</td>
+                        <td class="p-4 text-right font-bold text-white">$${s.total.toFixed(2)}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando ventas.</p>'; }
+        };
+
         window.openPasswordModal = (action) => {
             pendingAction = action;
             document.getElementById('modal-password').classList.add('active-modal');
@@ -365,34 +395,28 @@
             const p = stock.find(item => item.id === id);
             if (!p) return;
             editingProductId = id; 
-            document.getElementById('ed-barcode').value = p.barcode || '';
             document.getElementById('ed-name').value = p.name;
             document.getElementById('ed-category').value = p.category || ''; 
             document.getElementById('ed-qty').value = p.quantity;
-            document.getElementById('ed-size').value = p.size || ''; 
             document.getElementById('ed-price').value = p.price;
             document.getElementById('modal-edit').classList.add('active-modal');
         };
 
         window.updateProduct = async () => {
-            const barcode = document.getElementById('ed-barcode').value;
             const name = document.getElementById('ed-name').value;
             const category = document.getElementById('ed-category').value;
             const qty = parseInt(document.getElementById('ed-qty').value);
-            const size = document.getElementById('ed-size').value;
             const price = parseFloat(document.getElementById('ed-price').value);
 
-            if(!barcode || !name || !category || isNaN(qty) || !size || isNaN(price)) {
+            if(!name || !category || isNaN(qty) || isNaN(price)) {
                 return showToast("Por favor, llene todos los campos", "error");
             }
 
             try {
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`, editingProductId), {
-                    barcode: barcode,
                     name: name,
                     category: category,
                     quantity: qty,
-                    size: size,
                     price: price
                 });
                 showToast("Stock Actualizado", "success");
@@ -404,56 +428,16 @@
             }
         };
 
-        window.loadSales = async () => {
-            const container = document.getElementById('sales-container');
-            container.innerHTML = '<div class="p-10 text-center"><i data-lucide="loader" class="w-8 h-8 animate-spin mx-auto text-gold-text"></i></div>';
-            lucide.createIcons();
+        window.loadExpenses = async () => {
+            const container = document.getElementById('expenses-container');
             try {
-                const q = query(salesRef, orderBy("timestamp", "desc"));
-                const snap = await getDocs(q);
-                if (snap.empty) {
-                    container.innerHTML = '<p class="text-center p-10 text-zinc-500">No hay ventas registradas.</p>';
-                    return;
-                }
-                let html = '<table class="w-full text-left text-sm"><thead><tr class="text-zinc-500 border-b border-zinc-800"><th class="p-4">Fecha/Hora</th><th class="p-4">Items</th><th class="p-4">Desglose de Pago</th><th class="p-4 text-right">Total</th></tr></thead><tbody>';
-                snap.forEach(doc => {
-                    const s = doc.data();
-                    const pagosHtml = s.payments ? s.payments.map(p => 
-                        `<span class="text-[9px] bg-zinc-800 px-2 py-1 rounded text-gold-text mr-1">${p.method}: $${p.amount.toFixed(2)}</span>`
-                    ).join('') : '<span class="text-zinc-600">Sin datos</span>';
-
-                    html += `<tr class="border-b border-zinc-900">
-                        <td class="p-4 font-mono text-[10px]">${new Date(s.timestamp).toLocaleString()}</td>
-                        <td class="p-4 text-zinc-400 text-xs">${s.items.map(i => `${i.name} (x${i.qty})`).join(', ')}</td>
-                        <td class="p-4">${pagosHtml}</td>
-                        <td class="p-4 text-right font-bold text-white">$${s.total.toFixed(2)}</td>
-                    </tr>`;
-                });
-                html += '</tbody></table>';
-                container.innerHTML = html;
-            } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando ventas.</p>'; }
+                const snap = await getDocs(expensesRef);
+                container.innerHTML = snap.empty ? '<p class="text-center p-10 text-zinc-500">Sin gastos hoy.</p>' : snap.docs.map(doc => {
+                    const e = doc.data();
+                    return `<div class="flex justify-between p-4 border-b border-zinc-800"><span>${e.description || e.title}</span><span class="text-red-400">-$${e.amount}</span></div>`;
+                }).join('');
+            } catch (e) { container.innerHTML = '<p class="p-10 text-red-500 text-center">Error cargando gastos.</p>'; }
         };
-
-       window.loadExpenses = async () => {
-    const container = document.getElementById('expenses-container');
-    try {
-        const snap = await getDocs(expensesRef);
-        container.innerHTML = snap.empty ? '<p class="text-center p-10 text-zinc-500 text-xs font-bold uppercase tracking-widest">Sin gastos registrados hoy.</p>' : snap.docs.map(doc => {
-            const e = doc.data();
-            // Aseguramos que el monto siempre tenga 2 decimales
-            const montoFormateado = parseFloat(e.amount || 0).toFixed(2);
-            
-            return `
-                <div class="flex justify-between items-center p-4 border-b border-zinc-800/50 hover:bg-zinc-900/30 transition-colors">
-                    <span class="font-bold text-white text-xs uppercase">${e.title || 'Sin concepto'}</span>
-                    <span class="text-red-500 font-mono font-black text-sm">-$${montoFormateado}</span>
-                </div>
-            `;
-        }).join('');
-    } catch (e) { 
-        container.innerHTML = '<p class="p-10 text-red-500 text-center text-xs">Error cargando historial de gastos.</p>'; 
-    }
-};
 
         window.loadIncidents = async () => {
             const container = document.getElementById('incidents-container');
@@ -495,7 +479,7 @@
         
         function showToast(m, t) {
             const div = document.createElement('div');
-            div.className = `fixed top-10 right-10 p-5 rounded-2xl z-[1000] font-bold shadow-2xl transition-all ${t === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
+            div.className = `fixed top-10 right-10 p-5 rounded-2xl z-[1000] font-bold shadow-2xl transition-all animate-bounce ${t === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
             div.innerText = m;
             document.body.appendChild(div);
             setTimeout(() => div.remove(), 3000);
@@ -503,37 +487,33 @@
 
         window.onload = () => lucide.createIcons();
 
-       window.saveGasto = async () => {
-    const titleValue = document.getElementById('expense-manual-title').value.trim();
-    // Capturamos el nuevo input numérico
-    const montoGasto = parseFloat(document.getElementById('montoGasto').value);
+        window.saveGasto = async () => {
+            const titleValue = document.getElementById('expense-manual-title').value.trim();
+            const amountValue = document.getElementById('expense-manual-desc').value.trim();
 
-    // Validamos que haya título y que el monto sea un número válido
-    if (!titleValue || isNaN(montoGasto) || montoGasto <= 0) {
-        return showToast("Por favor, ingrese un concepto y un monto mayor a 0", "error");
-    }
+            if (!titleValue || !amountValue) {
+                return showToast("Por favor, llene todos los campos", "error");
+            }
 
-    try {
-        await addDoc(expensesRef, {
-            title: titleValue,   
-            amount: montoGasto, 
-            date: new Date().toLocaleDateString(),
-            timestamp: new Date().toISOString()
-        });
+            try {
+                await addDoc(expensesRef, {
+                    title: titleValue,   
+                    name: titleValue,    
+                    amount: amountValue, 
+                    date: new Date().toLocaleDateString(),
+                    timestamp: new Date().toISOString()
+                });
 
-        showToast("Gasto Registrado", "success");
-        
-        // Limpiamos los campos
-        document.getElementById('expense-manual-title').value = '';
-        document.getElementById('montoGasto').value = '';
+                showToast("Gasto Registrado", "success");
+                document.getElementById('expense-manual-title').value = '';
+                document.getElementById('expense-manual-desc').value = '';
 
-        // Recargamos la tabla
-        if (typeof window.loadExpenses === 'function') window.loadExpenses();
-    } catch (e) {
-        console.error(e);
-        showToast("Error al guardar", "error");
-    }
-};
+                if (typeof window.loadExpenses === 'function') window.loadExpenses();
+            } catch (e) {
+                console.error(e);
+                showToast("Error al guardar", "error");
+            }
+        };
 
         window.calcularGastosDelDiaCierre = async () => {
             try {
@@ -543,6 +523,7 @@
                 let ventasPagoMovil = 0;
                 let totalVentas = 0;
 
+                // 1. Calcular Gastos
                 const queryGastos = await getDocs(expensesRef);
                 queryGastos.forEach((doc) => {
                     const data = doc.data();
@@ -551,20 +532,38 @@
                     }
                 });
 
+                // 2. Calcular Ventas del Día para rellenar automáticamente la tabla
                 const queryVentas = await getDocs(salesRef);
+                const tbody = document.querySelector('#cierre-main-data-table tbody');
+                if (tbody) tbody.innerHTML = '';
+
                 queryVentas.forEach((doc) => {
                     const data = doc.data();
                     if (data.date === hoy) {
                         totalVentas += parseFloat(data.total) || 0;
+                        
                         if (data.payments) {
                             data.payments.forEach(p => {
-                                if (p.method === 'USD' || p.method === 'Efectivo BS') ventasEfectivo += parseFloat(p.amount) || 0;
-                                if (p.method === 'P. Móvil BS') ventasPagoMovil += parseFloat(p.amount) || 0;
+                                if (p.method === 'USD' || p.method === 'Efectivo BS') ventasEfectivo += p.amount;
+                                if (p.method === 'P. Móvil BS') ventasPagoMovil += p.amount;
                             });
+                        }
+
+                        // Inyectar fila en los movimientos de la jornada
+                        if (tbody) {
+                            const tr = document.createElement('tr');
+                            tr.className = "border-b border-zinc-900";
+                            tr.innerHTML = `
+                                <td class="p-4 text-emerald-400 font-bold">VENTA</td>
+                                <td class="p-4 text-zinc-400">${data.items ? data.items.map(i => `${i.name} (x${i.qty})`).join(', ') : 'Artículos'}</td>
+                                <td class="p-4 text-right font-bold text-white">$${(data.total || 0).toFixed(2)}</td>
+                            `;
+                            tbody.appendChild(tr);
                         }
                     }
                 });
 
+                // Rellenar campos del panel
                 if (document.getElementById('cc-cash')) document.getElementById('cc-cash').value = ventasEfectivo.toFixed(2);
                 if (document.getElementById('cc-delivery')) document.getElementById('cc-delivery').value = ventasPagoMovil.toFixed(2);
                 if (document.getElementById('cc-total-ventas')) document.getElementById('cc-total-ventas').value = totalVentas.toFixed(2);
@@ -574,11 +573,6 @@
                 if (document.getElementById('cc-final-neto')) document.getElementById('cc-final-neto').value = finalNeto.toFixed(2);
 
                 window.calculateCierreDifferenceFromZero();
-                
-                // Llenamos la tabla de historial cada vez que se abre esta vista
-                if (window.loadCierresHistoricos) {
-                    window.loadCierresHistoricos();
-                }
 
             } catch (error) {
                 console.error("Error al calcular la jornada diaria:", error);
@@ -589,21 +583,21 @@
             const input = document.getElementById('cierre-filter-input');
             if (!input) return;
             const query = input.value.toLowerCase().trim();
-            const rows = document.querySelectorAll('#cc-history-tbody tr');
+            const rows = document.querySelectorAll('#cierre-main-data-table tbody tr');
 
             rows.forEach(row => {
                 row.style.display = row.innerText.toLowerCase().includes(query) ? "" : "none";
             });
         };
 
-       window.calculateCierreDifferenceFromZero = () => {
+        window.calculateCierreDifferenceFromZero = () => {
             const netoReal = parseFloat(document.getElementById('cc-final-neto').value) || 0;
             const cajaFisica = parseFloat(document.getElementById('cc-real-cash').value) || 0;
             const diffInput = document.getElementById('cc-diff');
+            
             if (!diffInput) return;
             
-            // Forzamos el cálculo limpio a dos decimales
-            const diferencia = parseFloat((cajaFisica - netoReal).toFixed(2));
+            const diferencia = cajaFisica - netoReal;
             diffInput.value = diferencia.toFixed(2);
             
             if (diferencia < 0) {
@@ -615,47 +609,9 @@
             }
         };
 
-        window.processFinalCierre = async () => {
-            if (!currentStore) {
-                showToast("Error: No hay sucursal activa", "error");
-                return;
-            }
-
-            try {
-                const totalVentas = parseFloat(document.getElementById('cc-total-ventas').value) || 0;
-                const totalGastos = parseFloat(document.getElementById('cc-total-gastos').value) || 0;
-                const cajaRealEsperada = parseFloat(document.getElementById('cc-final-neto').value) || 0;
-                const efectivoFisicoEntregado = parseFloat(document.getElementById('cc-real-cash').value) || 0;
-                const descuadreDiferencia = parseFloat(document.getElementById('cc-diff').value) || 0;
-                const ventasEfectivo = parseFloat(document.getElementById('cc-cash').value) || 0;
-                const ventasPagoMovil = parseFloat(document.getElementById('cc-delivery').value) || 0;
-
-                const closuresRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_cierres`);
-
-                await addDoc(closuresRef, {
-                    date: new Date().toLocaleDateString(),
-                    timestamp: new Date().toISOString(),
-                    sucursal: currentStore,
-                    totalVentas: totalVentas,
-                    totalGastos: totalGastos,
-                    cajaRealEsperada: cajaRealEsperada,
-                    efectivoFisicoEntregado: efectivoFisicoEntregado,
-                    descuadreDiferencia: descuadreDiferencia,
-                    desgloseVentas: {
-                        efectivoSistema: ventasEfectivo,
-                        pagoMovilSistema: ventasPagoMovil
-                    }
-                });
-
-                showToast("Cierre Registrado y Guardado con Éxito", "success");
-                
-                currentStore = null;
-                window.location.reload();
-
-            } catch (error) {
-                console.error("Error al guardar cierre en Firebase:", error);
-                showToast("Error al guardar en base de datos", "error");
-            }
+        window.processFinalCierre = () => {
+            showToast("Cierre Registrado y Guardado con Éxito", "success");
+            window.showView('main');
         };
 
         window.filterManualSelectOptions = () => {
@@ -683,162 +639,6 @@
                 select.value = firstMatch;
             } else if (query === "") {
                 select.value = "";
-            }
-        };
-
-        // Carga el historial de cierres usando el ID correcto cc-history-tbody
-        window.loadCierresHistoricos = async () => {
-            const tbody = document.getElementById('cc-history-tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '<tr><td colspan="2" class="p-6 text-center"><i data-lucide="loader" class="w-6 h-6 animate-spin mx-auto text-gold-text"></i></td></tr>';
-            if (window.lucide) lucide.createIcons();
-            
-            try {
-                const closuresRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_cierres`);
-                const q = query(closuresRef, orderBy("timestamp", "desc"));
-                const snap = await getDocs(q);
-                
-                if (snap.empty) {
-                    tbody.innerHTML = '<tr><td colspan="2" class="p-6 text-center text-zinc-500 text-xs font-bold uppercase tracking-widest">No hay cierres registrados.</td></tr>';
-                    return;
-                }
-                
-                let html = '';
-                
-                snap.forEach(docSnap => {
-                    const c = docSnap.data();
-                    const fechaValida = c.date || (c.timestamp ? new Date(c.timestamp).toLocaleDateString() : 'Fecha N/A');
-                    
-                    html += `
-                        <tr class="border-b border-zinc-900/50 hover:bg-zinc-900/30 transition-colors">
-                            <td class="p-4 font-semibold text-white">${fechaValida}</td>
-                            <td class="p-4 text-right">
-                                <button onclick="window.solicitarClaveCierre('${fechaValida}')" class="bg-zinc-900 border border-zinc-800 hover:border-gold-text text-gold-text px-4 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all">
-                                    Detalles
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                
-                tbody.innerHTML = html;
-                if (window.lucide) lucide.createIcons();
-            } catch (e) {
-                console.error(e);
-                tbody.innerHTML = '<tr><td colspan="2" class="p-6 text-center text-red-500 text-xs">Error al cargar cierres históricos.</td></tr>';
-            }
-        };
-
-        // Función para solicitar la contraseña protegida
-        window.solicitarClaveCierre = (fechaCierre) => {
-            const password = prompt("🔐 Ingrese la contraseña de seguridad para ver el desglose diario:");
-            if (password === "MIsREyes0803!") {
-                window.abrirDetalleIndependiente(fechaCierre);
-            } else if (password !== null) {
-                alert("❌ Contraseña incorrecta. Acceso denegado.");
-            }
-        };
-
-        // Función que consulta las ventas de ese día en Firebase y abre el modal
-        window.abrirDetalleIndependiente = async (fechaCierre) => {
-            const modal = document.getElementById('modal-detalle-dia');
-            const title = document.getElementById('modal-detalle-dia-title');
-            const content = document.getElementById('modal-detalle-dia-content');
-            
-            if(!modal || !content) return;
-            
-            title.innerText = `Cierre de Caja - ${fechaCierre}`;
-            content.innerHTML = '<div class="p-8 text-center"><i data-lucide="loader" class="w-8 h-8 animate-spin mx-auto text-gold-text mb-2"></i><p class="text-xs text-zinc-500">Consultando operaciones...</p></div>';
-            modal.classList.add('active-modal');
-            if (window.lucide) lucide.createIcons();
-            
-            try {
-                // Consultamos la colección global de ventas (salesRef)
-                const snap = await getDocs(salesRef);
-                let ventasDelDia = [];
-                let resumenPagos = { 'USD': 0, 'Efectivo BS': 0, 'P. Móvil BS': 0, 'Zelle': 0 };
-                let granTotal = 0;
-                
-                snap.forEach(doc => {
-                    const venta = doc.data();
-                    if (venta.date === fechaCierre) {
-                        ventasDelDia.push(venta);
-                        granTotal += parseFloat(venta.total) || 0;
-                        if (venta.payments) {
-                            venta.payments.forEach(p => {
-                                if (resumenPagos[p.method] !== undefined) {
-                                    resumenPagos[p.method] += parseFloat(p.amount) || 0;
-                                }
-                            });
-                        }
-                    }
-                });
-                
-                if (ventasDelDia.length === 0) {
-                    content.innerHTML = '<p class="text-center text-zinc-500 py-6 text-xs font-bold uppercase tracking-widest">No hay transacciones registradas en este día.</p>';
-                    return;
-                }
-                
-                // Estructura visual para la ventana independiente
-                let html = `
-                    <div class="grid grid-cols-2 gap-2 mb-4">
-                        <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-900">
-                            <span class="text-[10px] text-zinc-500 block uppercase font-bold tracking-wider">Total Facturado</span>
-                            <span class="text-base font-black text-emerald-400">$${granTotal.toFixed(2)}</span>
-                        </div>
-                        <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-900">
-                            <span class="text-[10px] text-zinc-500 block uppercase font-bold tracking-wider">Operaciones</span>
-                            <span class="text-base font-black text-white">${ventasDelDia.length}</span>
-                        </div>
-                    </div>
-                    
-                    <h4 class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Métodos de Pago:</h4>
-                    <div class="grid grid-cols-2 gap-2 mb-4 text-xs">
-                        <div class="bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/40 flex justify-between items-center">
-                            <span class="text-zinc-400">💵 USD Físico:</span>
-                            <span class="font-bold text-white">$${resumenPagos['USD'].toFixed(2)}</span>
-                        </div>
-                        <div class="bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/40 flex justify-between items-center">
-                            <span class="text-zinc-400">🇻🇪 Efectivo BS:</span>
-                            <span class="font-bold text-white">$${resumenPagos['Efectivo BS'].toFixed(2)}</span>
-                        </div>
-                        <div class="bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/40 flex justify-between items-center">
-                            <span class="text-zinc-400">📱 P. Móvil BS:</span>
-                            <span class="font-bold text-white">$${resumenPagos['P. Móvil BS'].toFixed(2)}</span>
-                        </div>
-                        <div class="bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/40 flex justify-between items-center">
-                            <span class="text-zinc-400">🇺🇸 Zelle:</span>
-                            <span class="font-bold text-white">$${resumenPagos['Zelle'].toFixed(2)}</span>
-                        </div>
-                    </div>
-                    
-                    <h4 class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Artículos Vendidos ese Día:</h4>
-                    <div class="max-h-40 overflow-y-auto space-y-1.5 pr-1">
-                `;
-                
-                ventasDelDia.forEach(v => {
-                    if (v.items) {
-                        v.items.forEach(item => {
-                            html += `
-                                <div class="flex justify-between items-center bg-zinc-950 p-2.5 rounded-xl border border-zinc-900 text-xs">
-                                    <div>
-                                        <p class="font-bold text-white uppercase text-[11px]">${item.name}</p>
-                                        <p class="text-[10px] text-zinc-500">Cantidad: x${item.qty}</p>
-                                    </div>
-                                    <span class="font-mono text-gold-text font-bold">$${(item.price * item.qty).toFixed(2)}</span>
-                                </div>
-                            `;
-                        });
-                    }
-                });
-                
-                html += `</div>`;
-                content.innerHTML = html;
-                if (window.lucide) lucide.createIcons();
-                
-            } catch (err) {
-                console.error(err);
-                content.innerHTML = '<p class="text-center text-red-400 p-4 text-xs">Error al leer los datos de Firebase.</p>';
             }
         };
     </script>
@@ -1164,9 +964,9 @@
                         <input type="text" id="expense-manual-title" placeholder="ESCRIBE EL TÍTULO QUE TÚ QUIERAS..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase text-white font-mono mt-1">
                     </div>
                     <div>
-    <label class="text-[10px] text-zinc-500 uppercase font-bold">Monto del Gasto ($)</label>
-    <input type="number" id="montoGasto" placeholder="0.00" step="0.01" min="0" class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-red-500 text-xl font-black text-red-400 font-mono mt-1">
-</div>
+                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Descripción / Detalles del Gasto</label>
+                        <textarea id="expense-manual-desc" placeholder="ESCRIBE LA DESCRIPCIÓN O MONTO LIBRE AQUÍ..." class="w-full p-4 bg-black border border-zinc-800 rounded-xl focus:border-gold-text text-xs uppercase h-32 resize-none text-white mt-1"></textarea>
+                    </div>
                     <button onclick="saveGasto()" class="w-full gold-gradient text-black py-4 rounded-xl font-black text-xs btn-hover uppercase shadow-lg mt-2">
                         REGISTRAR GASTO
                     </button>
@@ -1259,7 +1059,7 @@
 
                 <div>
                     <label class="text-[10px] text-emerald-400 uppercase font-bold font-mono">Caja Real Esperada (Ventas - Gastos) ($)</label>
-                    <input type="number" id="cc-final-neto" readonly value="0.00" class="w-full p-4 bg-zinc-950 border border-emerald-400 rounded-xl font-mono text-emerald-400 text-lg font-black mt-1">
+                    <input type="number" id="cc-final-neto" readonly value="0.00" class="w-full p-4 bg-zinc-950 border border-emerald-950/30 rounded-xl font-mono text-emerald-400 text-lg font-black mt-1">
                 </div>
             </div>
 
@@ -1284,18 +1084,18 @@
 
         <div class="glass-card rounded-2xl border border-zinc-900 overflow-hidden">
             <div class="p-4 bg-zinc-950 border-b border-zinc-900 flex justify-between items-center">
-                <h4 class="text-xs font-black uppercase tracking-wider text-zinc-400 font-mono">Historial de Cierres Diarios</h4>
+                <h4 class="text-xs font-black uppercase tracking-wider text-zinc-400 font-mono">Movimientos de la Jornada</h4>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs text-zinc-400">
+                <table id="cierre-main-data-table" class="w-full text-left font-mono text-xs">
                     <thead>
-                        <tr class="border-b border-zinc-800 text-zinc-500 uppercase tracking-wider text-[10px]">
-                            <th class="p-3">Día del Cierre</th>
-                            <th class="p-3 text-right">Acción</th>
+                        <tr class="bg-zinc-950 text-zinc-500 border-b border-zinc-900 uppercase">
+                            <th class="p-4 font-bold">Tipo</th>
+                            <th class="p-4 font-bold">Concepto / Detalle</th>
+                            <th class="p-4 font-bold text-right">Monto ($)</th>
                         </tr>
                     </thead>
-                    <tbody id="cc-history-tbody">
-                    </tbody>
+                    <tbody class="divide-y divide-zinc-900 text-zinc-300"></tbody>
                 </table>
             </div>
         </div>
@@ -1324,7 +1124,6 @@
         <div class="glass-card p-8 rounded-[2rem] max-w-md w-full">
             <h3 class="text-xl font-bold gold-text mb-6 uppercase">Editar Stock</h3>
             <div class="space-y-4">
-                <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Código de Barras</label><input type="text" id="ed-barcode" class="w-full p-3 mt-1 font-mono"></div>
                 <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Nombre</label><input type="text" id="ed-name" class="w-full p-3 mt-1"></div>
                 <div>
                     <label class="text-[10px] text-zinc-500 uppercase font-bold">Categoría</label>
@@ -1354,31 +1153,11 @@
                     </select>
                 </div>
                 <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Stock Actual</label><input type="number" id="ed-qty" class="w-full p-3 mt-1"></div>
-                <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Talla / Tamaño</label><input type="text" id="ed-size" class="w-full p-3 mt-1"></div>
                 <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Precio ($)</label><input type="number" step="0.01" id="ed-price" class="w-full p-3 mt-1"></div>
             </div>
             <div class="flex gap-3 mt-8">
                 <button onclick="document.getElementById('modal-edit').classList.remove('active-modal')" class="flex-1 bg-zinc-900 py-3 rounded-xl">Cerrar</button>
                 <button onclick="updateProduct()" class="flex-1 gold-gradient text-black py-3 rounded-xl font-black">ACTUALIZAR</button>
-            </div>
-        </div>
-    </div>
-
-   <div id="modal-detalle-dia" class="modal">
-        <div class="glass-card w-full max-w-md p-6 rounded-3xl border border-zinc-800 shadow-2xl relative">
-            <div class="flex justify-between items-center mb-4 border-b border-zinc-800/60 pb-3">
-                <h3 id="modal-detalle-dia-title" class="text-white font-black text-xs uppercase tracking-widest gold-text">Detalles de Venta</h3>
-                <button onclick="document.getElementById('modal-detalle-dia').classList.remove('active-modal')" class="text-zinc-500 hover:text-white p-1">
-                    <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
-            </div>
-            
-            <div id="modal-detalle-dia-content" class="space-y-3"></div>
-            
-            <div class="mt-5 pt-3 border-t border-zinc-800/60 flex">
-                <button onclick="document.getElementById('modal-detalle-dia').classList.remove('active-modal')" class="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-bold py-2.5 rounded-xl transition-colors text-xs uppercase tracking-widest border border-zinc-800">
-                    Cerrar Detalle
-                </button>
             </div>
         </div>
     </div>
@@ -1410,6 +1189,32 @@
             if (event.ctrlKey && (event.key === 'U' || event.key === 'u')) {
                 event.preventDefault();
             }
+        });
+    </script>
+    <div id="loading-overlay" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="glass-card p-10 rounded-3xl text-center border border-zinc-800">
+            <i data-lucide="loader" class="w-12 h-12 text-gold-text animate-spin mx-auto mb-4"></i>
+            <h3 class="text-white font-black text-xl uppercase">Procesando...</h3>
+        </div>
+    </div>
+
+    <script>
+        window.startLoadingLoop = () => {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.remove('hidden'); 
+            
+            setTimeout(() => {
+                overlay.classList.add('hidden'); 
+                if (window.lucide) lucide.createIcons();
+            }, 5000); 
+        };
+
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!btn.innerText.includes('Cerrar') && !btn.innerText.includes('VOLVER') && !btn.innerText.includes('Volver')) {
+                    window.startLoadingLoop();
+                }
+            });
         });
     </script>
 </body>
