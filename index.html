@@ -837,9 +837,8 @@ window.ejecutarCierreCaja = async () => {
     }
 };
 
-// 3. CARGAR EL HISTORIAL EN LA TABLA (Sin repetir días)
-// 3. CARGAR EL HISTORIAL EN LA TABLA CON BOTÓN DE DETALLES (Sin repetir días y sin mostrar montos)
-    window.loadClosuresHistory = async () => {
+// 3. CARGAR EL HISTORIAL EN LA TABLA (Sin repetir días y sin mostrar montos)
+window.loadClosuresHistory = async () => {
     const container = document.getElementById('closures-history-container');
     if (!container) return;
 
@@ -862,14 +861,14 @@ window.ejecutarCierreCaja = async () => {
 
         let html = "";
         docsArr.forEach(c => {
-            // Convertimos el objeto de datos a string seguro para pasarlo al botón
-            const dataStr = encodeURIComponent(JSON.stringify(c));
+            // Convertimos el objeto de datos a un string seguro escapando comillas para el HTML
+            const cleanDataStr = btoa(unescape(encodeURIComponent(JSON.stringify(c))));
 
             html += `
             <tr class="border-b border-zinc-900/50 hover:bg-zinc-900/20 font-mono text-[11px] transition-colors">
                 <td class="p-3 text-zinc-400 font-bold">${c.date}</td>
                 <td class="p-3 text-right">
-                    <button onclick="window.verDetallesCierre('${dataStr}')" class="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-500 hover:text-amber-400 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-200">
+                    <button onclick="window.verDetallesCierre('${cleanDataStr}')" class="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-500 hover:text-amber-400 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-200">
                         Ver Detalles
                     </button>
                 </td>
@@ -883,11 +882,11 @@ window.ejecutarCierreCaja = async () => {
     }
 };
 
-// 4. FUNCIÓN PARA MOSTRAR LOS DETALLES DEL CIERRE SELECCIONADO EN EL MODAL
-   // 4. FUNCIÓN PARA MOSTRAR LOS DETALLES DEL CIERRE SELECCIONADO EN EL MODAL (CORREGIDA)
-window.verDetallesCierre = (dataStr) => {
+// 4. FUNCIÓN PARA MOSTRAR LOS DETALLES DEL CIERRE SELECCIONADO EN EL MODAL (NATIVO .active-modal)
+window.verDetallesCierre = (base64Str) => {
     try {
-        const closure = JSON.parse(decodeURIComponent(dataStr));
+        // Decodificamos de forma segura el objeto de datos
+        const closure = JSON.parse(decodeURIComponent(escape(atob(base64Str))));
         
         const salesContainer = document.getElementById('detail-closure-sales');
         const expensesContainer = document.getElementById('detail-closure-expenses');
@@ -895,7 +894,7 @@ window.verDetallesCierre = (dataStr) => {
 
         if (!salesContainer || !expensesContainer || !modal) return;
 
-        // Limpiamos y rellenamos las ventas del cierre guardado
+        // Rellenamos las ventas calculadas del cierre
         salesContainer.innerHTML = `
             <div class="flex justify-between border-b border-zinc-900 py-1 text-zinc-400"><span>Efectivo USD:</span><span class="text-emerald-500 font-bold">$${parseFloat(closure.salesUsd || 0).toFixed(2)}</span></div>
             <div class="flex justify-between border-b border-zinc-900 py-1 text-zinc-400"><span>Zelle USD:</span><span class="text-emerald-400 font-bold">$${parseFloat(closure.salesZelle || 0).toFixed(2)}</span></div>
@@ -910,8 +909,8 @@ window.verDetallesCierre = (dataStr) => {
             </div>
         `;
 
-        // CORRECCIÓN: Quitamos 'hidden' para que el modal aparezca en pantalla usando tu diseño nativo
-        modal.classList.remove('hidden');
+        // CORRECCIÓN FINAL: Usamos 'active-modal' que activa el display: flex de tus estilos CSS
+        modal.classList.add('active-modal');
         
     } catch (e) {
         console.error("Error al desplegar los detalles del cierre:", e);
