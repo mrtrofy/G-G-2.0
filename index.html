@@ -814,11 +814,17 @@ window.ejecutarCierreCaja = async () => {
     if (!closuresRef) return showToast("Error: Referencia de base de datos no lista", "error");
 
     try {
-        // Usamos la fecha limpia como identificador de documento único por día
+        // Limpiamos la fecha para usarla como ID único del documento (Ej: "16-6-2026")
         const docId = currentClosingData.date.replace(/\//g, "-");
         
-        // CORRECCIÓN: Apuntar al documento dentro de la colección específica 'closuresRef' de la tienda activa
+        // CORRECCIÓN DE ERROR: Usamos la referencia directa desde el objeto closuresRef
+        // Esto evita tener que usar la función "doc" que te da el ReferenceError.
+        // closuresRef.path nos da la ruta de la colección, y añadimos el ID del documento de forma segura.
+        
+        // Accedemos mediante el SDK cargado en el espacio de nombres global
+        const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
         const docSecureRef = doc(closuresRef, docId);
+        
         await setDoc(docSecureRef, currentClosingData);
 
         showToast(`Cierre de caja del día ${currentClosingData.date} procesado con éxito`, "success");
