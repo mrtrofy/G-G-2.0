@@ -727,23 +727,33 @@
 
         // Variable temporal para guardar el cálculo consolidado del día actual antes de subirlo
 let currentClosingData = null;
+function sonMismaFecha(fecha1, fecha2) {
+        const p1 = fecha1.split('/').map(Number);
+        const p2 = fecha2.split('/').map(Number);
+        
+        const sortParts = (p) => {
+            const year = p.find(n => n > 2000);
+            const others = p.filter(n => n < 2000).sort((a,b) => a-b);
+            return `${others[0]}-${others[1]}-${year}`;
+        };
 
+        return sortParts(p1) === sortParts(p2);
+    }
 // 1. CALCULAR DE FORMA AUTOMÁTICA LOS NÚMEROS DEL DÍA ACTUAL
    window.initCierreCaja = async () => {
     const hoy = new Date().toLocaleDateString();
-    console.log("Fecha actual que buscamos:", hoy); // Verás esto en la consola F12
-
-    let vEfectivoUsd = 0, vEfectivoBs = 0, vPagoMovil = 0, vZelle = 0;
     
+    // ... (tus variables de suma inicializadas en 0) ...
+
     try {
         const salesSnap = await getDocs(salesRef);
-        console.log("Total de ventas en DB:", salesSnap.size); // ¿Cuántas ventas hay en total?
-
+        
         salesSnap.forEach(doc => {
             const order = doc.data();
-            console.log("Comparando:", order.date, "con", hoy); // Verás si coinciden las fechas
             
-            if (order.date === hoy && order.payments) {
+            // AQUÍ ESTÁ EL CAMBIO: Usamos la función de comparación flexible
+            if (order.date && sonMismaFecha(order.date, hoy) && order.payments) {
+                
                 order.payments.forEach(p => {
                     if (p.method === 'USD') vEfectivoUsd += parseFloat(p.amount || 0);
                     if (p.method === 'Efectivo BS') vEfectivoBs += parseFloat(p.amount || 0);
