@@ -826,7 +826,7 @@ window.initCierreCaja = async () => {
         const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
         const docSecureRef = doc(closuresRef, docId);
         
-        // Guardamos en Firebase
+        // Guardamos en Firebase el cierre
         await setDoc(docSecureRef, currentClosingData);
 
         showToast(`Cierre de caja del día ${currentClosingData.date} procesado con éxito`, "success");
@@ -834,10 +834,11 @@ window.initCierreCaja = async () => {
         // 1. Recargar la tabla inferior de historial antes de salir
         window.loadClosuresHistory();
 
-        // 2. REDIRECCIÓN AUTOMÁTICA: Volver a la pantalla de selección de tienda/sucursal
+        // 2. REDIRECCIÓN DICTAMINADA A SUCURSALES (Limpia sesión actual)
         setTimeout(() => {
-            window.showView('store-select');
-        }, 1000); // Espera 1 segundo para que el usuario pueda ver el Toast de éxito limpia y cómodamente
+            currentStore = null; // Cierra la sesión de la sucursal actual para obligar un nuevo login limpio
+            window.showView('store-select'); // Te lleva directo a la pantalla de selección de tiendas
+        }, 1200); // 1.2 segundos para leer la notificación de éxito cómodamente
         
     } catch (err) {
         console.error("Error al guardar cierre:", err);
