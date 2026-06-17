@@ -1379,58 +1379,66 @@ window.verDetallesCierre = (base64Str) => {
     </div>
 
     <div id="view-closing" class="hidden space-y-6">
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex justify-between items-center mb-2">
         <h2 class="text-lg font-black tracking-widest text-white uppercase border-l-4 border-amber-500 pl-3">Cierre de Caja del Día</h2>
         <span id="closing-current-date" class="font-mono text-xs text-zinc-500 font-bold bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-900"></span>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="glass-card p-5 rounded-2xl border border-zinc-800 space-y-3">
-            <h3 class="text-xs font-black uppercase text-amber-500 tracking-wider mb-2">Resumen de Ventas Hoy</h3>
-            <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
-                <span class="text-zinc-400 font-bold">EFECTIVO ($):</span>
-                <span id="close-sales-usd" class="text-white font-black">$0.00</span>
-            </div>
-            <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
-                <span class="text-zinc-400 font-bold">EFECTIVO (Bs):</span>
-                <span id="close-sales-cash-bs" class="text-white font-black">0.00 Bs</span>
-            </div>
-            <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
-                <span class="text-zinc-400 font-bold">PAGO MÓVIL (Bs):</span>
-                <span id="close-sales-mobile" class="text-white font-black">0.00 Bs</span>
-            </div>
-            <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
-                <span class="text-zinc-400 font-bold">ZELLE ($):</span>
-                <span id="close-sales-zelle" class="text-white font-black">$0.00</span>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+        
+        <div class="glass-card p-4 rounded-2xl border border-zinc-800 space-y-2 flex flex-col justify-between">
+            <div>
+                <h3 class="text-[10px] font-black uppercase text-amber-500 tracking-wider mb-2">Resumen de Ventas Hoy</h3>
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center bg-zinc-950/50 p-2 rounded-xl border border-zinc-900/60 font-mono text-[11px]">
+                        <span class="text-zinc-500 font-bold">EFECTIVO ($):</span>
+                        <span id="close-sales-usd" class="text-white font-black">$0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-zinc-950/50 p-2 rounded-xl border border-zinc-900/60 font-mono text-[11px]">
+                        <span class="text-zinc-500 font-bold">EFECTIVO (Bs):</span>
+                        <span id="close-sales-cash-bs" class="text-white font-black">0.00 Bs</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-zinc-950/50 p-2 rounded-xl border border-zinc-900/60 font-mono text-[11px]">
+                        <span class="text-zinc-500 font-bold">PAGO MÓVIL (Bs):</span>
+                        <span id="close-sales-mobile" class="text-white font-black">0.00 Bs</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-zinc-950/50 p-2 rounded-xl border border-zinc-900/60 font-mono text-[11px]">
+                        <span class="text-zinc-500 font-bold">ZELLE ($):</span>
+                        <span id="close-sales-zelle" class="text-white font-black">$0.00</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="glass-card p-5 rounded-2xl border border-zinc-800 flex flex-col justify-between">
+        <div class="glass-card p-4 rounded-2xl border border-zinc-800 flex flex-col justify-between">
             <div>
-                <h3 class="text-xs font-black uppercase text-red-500 tracking-wider mb-2">Egresos / Gastos Hoy</h3>
-                <div id="close-expenses-container" class="space-y-2 max-h-36 overflow-y-auto pr-1">
+                <h3 class="text-[10px] font-black uppercase text-red-500 tracking-wider mb-2">Egresos / Gastos Hoy</h3>
+                <div id="close-expenses-container" class="space-y-1.5 max-h-28 overflow-y-auto pr-1">
                     </div>
             </div>
-            <button onclick="window.ejecutarCierreCaja()" class="w-full bg-zinc-950 hover:bg-zinc-900 text-amber-500 font-black py-3 rounded-xl border border-zinc-900 hover:border-zinc-800 transition-all text-xs uppercase tracking-widest mt-4">
-                Procesar Cierre de Caja
+            <button onclick="window.ejecutarCierreCaja()" class="w-full bg-zinc-950 hover:bg-zinc-900 text-amber-500 font-black py-2.5 rounded-xl border border-zinc-900 hover:border-zinc-800 transition-all text-[10px] uppercase tracking-widest mt-3">
+                Procesar Cierre
             </button>
         </div>
-    </div>
 
-    <div class="glass-card p-5 rounded-2xl border border-zinc-800 space-y-3 w-full">
-        <h3 class="text-xs font-black uppercase text-zinc-400 tracking-wider">Historial de Cierres</h3>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="border-b border-zinc-900 text-[10px] uppercase font-black text-zinc-500 tracking-wider">
-                        <th class="p-3">Fecha</th>
-                        <th class="p-3 text-right">Acción</th>
-                    </tr>
-                </thead>
-                <tbody id="closures-history-container">
-                    </tbody>
-            </table>
+        <div class="glass-card p-4 rounded-2xl border border-zinc-800 flex flex-col justify-between">
+            <div>
+                <h3 class="text-[10px] font-black uppercase text-zinc-400 tracking-wider mb-2">Historial de Cierres</h3>
+                <div class="max-h-40 overflow-y-auto pr-1">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-zinc-900 text-[9px] uppercase font-black text-zinc-600 tracking-wider">
+                                <th class="pb-2">Fecha</th>
+                                <th class="pb-2 text-right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="closures-history-container">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
