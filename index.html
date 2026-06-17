@@ -744,26 +744,33 @@ if (!currentStore || !db) {
         // Variable temporal para guardar el cálculo consolidado del día actual antes de subirlo
 let currentClosingData = null;
 
-// 1. CALCULAR DE FORMA AUTOMÁTICA LOS NÚMEROS DEL DÍA ACTUAL
-  window.initCierreCaja = async () => {
+// 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE
+window.initCierreCaja = async () => {
     const hoy = new Date().toLocaleDateString();
     console.log("Fecha actual que buscamos:", hoy);
 
+    // PASO CRÍTICO: Forzamos el reinicio visual instantáneo a 0 para que no retenga montos de sesiones anteriores
+    if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$0.00`;
+    if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `0.00 Bs`;
+    if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `0.00 Bs`;
+    if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$0.00`;
+    if (document.getElementById('closing-current-date')) document.getElementById('closing-current-date').innerText = hoy;
+
     let vEfectivoUsd = 0, vEfectivoBs = 0, vPagoMovil = 0, vZelle = 0;
     
-    // Función interna para normalizar y comparar fechas sin importar el orden de día/mes
-    const sonMismaFecha = (f1, f2) => {
-        if (!f1 || !f2) return false;
-        const p1 = f1.split('/').map(Number);
-        const p2 = f2.split('/').map(Number);
-        if (p1.length < 3 || p2.length < 3) return f1 === f2;
-        const sortParts = (p) => {
-            const y = p.find(n => n > 2000) || 0;
-            const o = p.filter(n => n <= 2000).sort((a, b) => a - b);
-            return `${o[0]}-${o[1]}-${y}`;
-        };
-        return sortParts(p1) === sortParts(p2);
+    // Función auxiliar para estandarizar las fechas y evitar desfases por ceros a la izquierda (Ej: 07 vs 7)
+    const normalizarFecha = (str) => {
+        if (!str) return '';
+        const partes = str.split('/');
+        if (partes.length < 3) return str;
+        // Mapeamos a números para quitar ceros iniciales flotantes y rearmamos un formato limpio estándar
+        const dia = parseInt(partes[0], 10);
+        const mes = parseInt(partes[1], 10);
+        const anio = parseInt(partes[2], 10);
+        return `${dia}-${mes}-${anio}`;
     };
+
+    const fechaHoyNormalizada = normalizarFecha(hoy);
 
     try {
         if (!salesRef) return;
@@ -771,7 +778,9 @@ let currentClosingData = null;
 
         salesSnap.forEach(doc => {
             const order = doc.data();
-            if (order.date && sonMismaFecha(order.date, hoy) && order.payments) {
+            
+            // Si la venta tiene fecha, las comparamos bajo el mismo estándar estricto
+            if (order.date && normalizarFecha(order.date) === fechaHoyNormalizada && order.payments) {
                 order.payments.forEach(p => {
                     if (p.method === 'USD') vEfectivoUsd += parseFloat(p.amount || 0);
                     if (p.method === 'Efectivo BS') vEfectivoBs += parseFloat(p.amount || 0);
@@ -781,7 +790,7 @@ let currentClosingData = null;
             }
         });
 
-        // Guardamos los datos calculados en el objeto global para que ejecutarCierreCaja los use
+        // Almacenamos el objeto estructurado para cuando se presione el botón procesar cierre
         currentClosingData = {
             date: hoy,
             salesUsd: vEfectivoUsd,
@@ -791,17 +800,13 @@ let currentClosingData = null;
             timestamp: new Date().getTime()
         };
 
-        // Actualización segura de los elementos de la interfaz en pantalla
+        // Pintamos los resultados finales calculados en la interfaz (Si no hay ventas hoy, se mantendrán en $0.00)
         if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$${vEfectivoUsd.toFixed(2)}`;
         if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `${vEfectivoBs.toFixed(2)} Bs`;
         if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `${vPagoMovil.toFixed(2)} Bs`;
         if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$${vZelle.toFixed(2)}`;
         
-        if (document.getElementById('closing-current-date')) {
-            document.getElementById('closing-current-date').innerText = hoy;
-        }
-
-        // Cargamos el historial de cierres guardados en la tabla inferior
+        // Refrescamos la tabla inferior del historial de cierres guardados
         window.loadClosuresHistory();
         
     } catch (e) {
