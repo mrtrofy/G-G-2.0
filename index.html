@@ -814,7 +814,7 @@ window.initCierreCaja = async () => {
     }
 };
 // 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
-    window.ejecutarCierreCaja = async () => {
+        window.ejecutarCierreCaja = async () => {
     if (!currentClosingData) return showToast("No hay datos cargados para cerrar", "error");
     if (!closuresRef) return showToast("Error: Referencia de base de datos no lista", "error");
 
@@ -831,21 +831,33 @@ window.initCierreCaja = async () => {
 
         showToast(`Cierre de caja del día ${currentClosingData.date} procesado con éxito`, "success");
         
-        // 1. Recargar la tabla inferior de historial antes de salir
+        // Recargar la tabla inferior de historial antes de salir
         window.loadClosuresHistory();
 
-        // 2. REDIRECCIÓN DICTAMINADA A SUCURSALES (Limpia sesión actual)
+        // REDIRECCIÓN FORZADA LIMPIA
         setTimeout(() => {
-            currentStore = null; // Cierra la sesión de la sucursal actual para obligar un nuevo login limpio
-            window.showView('store-select'); // Te lleva directo a la pantalla de selección de tiendas
-        }, 1200); // 1.2 segundos para leer la notificación de éxito cómodamente
+            // 1. Limpiamos las variables globales de la sucursal actual
+            currentStore = null;
+            
+            // 2. Reseteamos los campos de contraseña de las sucursales en el HTML para que queden limpios
+            const passInput1 = document.getElementById('store-pass-1');
+            const passInput2 = document.getElementById('store-pass-2');
+            if (passInput1) passInput1.value = "";
+            if (passInput2) passInput2.value = "";
+            
+            // 3. Limpiamos el texto de la sucursal activa en la barra superior si existe
+            const storeDisplay = document.getElementById('store-name-display');
+            if (storeDisplay) storeDisplay.innerText = "Seleccione Sucursal";
+
+            // 4. Forzamos de forma directa la vista de selección de sucursales
+            window.showView('store-select');
+        }, 1000); // 1 segundo exacto de espera para que se guarde de forma síncrona
         
     } catch (err) {
         console.error("Error al guardar cierre:", err);
         showToast("Error al guardar el cierre en Firebase", "error");
     }
 };
-
     // FUNCIÓN PARA REINICIAR EL CONTEO DIARIO DE VENTAS Y EGRESOS
 window.reiniciarConteoDiario = () => {
     // Confirmación de seguridad
