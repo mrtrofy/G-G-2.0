@@ -1373,62 +1373,60 @@ window.verDetallesCierre = (base64Str) => {
     </div>
 
     <div id="view-closing" class="hidden space-y-6">
-    <div class="flex justify-between items-center mb-2">
-        <h2 class="text-sm font-black tracking-widest text-white uppercase border-l-4 border-amber-500 pl-3">Cierre de Caja</h2>
-        <span id="closing-current-date" class="font-mono text-[10px] text-zinc-500 font-bold bg-zinc-950 px-3 py-1 rounded-xl border border-zinc-900"></span>
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-black tracking-widest text-white uppercase border-l-4 border-amber-500 pl-3">Cierre de Caja del Día</h2>
+        <span id="closing-current-date" class="font-mono text-xs text-zinc-500 font-bold bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-900"></span>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch w-full">
         
-        <div class="glass-card p-4 rounded-2xl border border-zinc-800 flex flex-col justify-between">
+        <div class="glass-card p-5 rounded-2xl border border-zinc-800 space-y-3 flex flex-col justify-between">
             <div>
-                <h3 class="text-[10px] font-black uppercase text-amber-500 tracking-wider mb-3">Resumen Ventas</h3>
-                <div class="space-y-1.5">
-                    <div class="flex justify-between items-center bg-zinc-950/50 p-2 rounded-xl border border-zinc-900/60 font-mono text-[10px]">
-                        <span class="text-zinc-500 font-bold">EFECTIVO ($):</span>
+                <h3 class="text-xs font-black uppercase text-amber-500 tracking-wider mb-2">Resumen de Ventas Hoy</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
+                        <span class="text-zinc-400 font-bold">EFECTIVO ($):</span>
                         <span id="close-sales-usd" class="text-white font-black">$0.00</span>
                     </div>
-                    <div class="flex justify-between items-center bg-zinc-950/50 p-2 rounded-xl border border-zinc-900/60 font-mono text-[10px]">
-                        <span class="text-zinc-500 font-bold">EFECTIVO (Bs):</span>
+                    <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
+                        <span class="text-zinc-400 font-bold">EFECTIVO (Bs):</span>
                         <span id="close-sales-cash-bs" class="text-white font-black">0.00 Bs</span>
                     </div>
-                    <div class="flex justify-between items-center bg-zinc-950/50 p-2 rounded-xl border border-zinc-900/60 font-mono text-[10px]">
-                        <span class="text-zinc-500 font-bold">PAGO MÓVIL (Bs):</span>
+                    <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
+                        <span class="text-zinc-400 font-bold">PAGO MÓVIL (Bs):</span>
                         <span id="close-sales-mobile" class="text-white font-black">0.00 Bs</span>
                     </div>
-                    <div class="flex justify-between items-center bg-zinc-950/50 p-2 rounded-xl border border-zinc-900/60 font-mono text-[10px]">
-                        <span class="text-zinc-500 font-bold">ZELLE ($):</span>
+                    <div class="flex justify-between items-center bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900 font-mono text-xs">
+                        <span class="text-zinc-400 font-bold">ZELLE ($):</span>
                         <span id="close-sales-zelle" class="text-white font-black">$0.00</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="glass-card p-4 rounded-2xl border border-zinc-800 flex flex-col justify-between">
-            <div class="flex flex-col h-full justify-between">
-                <div>
-                    <h3 class="text-[10px] font-black uppercase text-red-500 tracking-wider mb-2">Egresos / Gastos</h3>
-                    <div id="close-expenses-container" class="space-y-1.5 max-h-24 overflow-y-auto pr-1 text-[11px]">
-                        </div>
-                </div>
-                <button onclick="window.ejecutarCierreCaja()" class="w-full bg-zinc-950 hover:bg-zinc-900 text-amber-500 font-black py-2 rounded-xl border border-zinc-900 hover:border-zinc-800 transition-all text-[9px] uppercase tracking-widest mt-2">
-                    Procesar Cierre
-                </button>
+        <div class="glass-card p-5 rounded-2xl border border-zinc-800 flex flex-col justify-between">
+            <div>
+                <h3 class="text-xs font-black uppercase text-red-500 tracking-wider mb-2">Egresos / Gastos Hoy</h3>
+                <div id="close-expenses-container" class="space-y-2 max-h-36 overflow-y-auto pr-1">
+                    </div>
             </div>
+            <button onclick="window.ejecutarCierreCaja()" class="w-full bg-zinc-950 hover:bg-zinc-900 text-amber-500 font-black py-3 rounded-xl border border-zinc-900 hover:border-zinc-800 transition-all text-xs uppercase tracking-widest mt-4">
+                Procesar Cierre de Caja
+            </button>
         </div>
 
-        <div class="glass-card p-4 rounded-2xl border border-zinc-800 flex flex-col justify-between">
+        <div class="glass-card p-5 rounded-2xl border border-zinc-800 flex flex-col justify-between">
             <div>
-                <h3 class="text-[10px] font-black uppercase text-zinc-400 tracking-wider mb-2">Historial Cierres</h3>
-                <div class="max-h-36 overflow-y-auto pr-1">
+                <h3 class="text-xs font-black uppercase text-zinc-400 tracking-wider mb-2">Historial de Cierres</h3>
+                <div class="max-h-48 overflow-y-auto pr-1">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="border-b border-zinc-900 text-[9px] uppercase font-black text-zinc-600 tracking-wider">
-                                <th class="pb-1.5">Fecha</th>
-                                <th class="pb-1.5 text-right">Ver</th>
+                            <tr class="border-b border-zinc-900 text-[10px] uppercase font-black text-zinc-500 tracking-wider">
+                                <th class="pb-2">Fecha</th>
+                                <th class="pb-2 text-right">Acción</th>
                             </tr>
                         </thead>
-                        <tbody id="closures-history-container">
+                        <tbody id="closures-history-container" class="font-mono text-xs">
                             </tbody>
                     </table>
                 </div>
@@ -1438,11 +1436,12 @@ window.verDetallesCierre = (base64Str) => {
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-        <button onclick="window.showView('main')" class="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-black py-2.5 rounded-xl border border-zinc-800 transition-all text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
-            <i data-lucide="arrow-left" class="w-3 h-3"></i> Menú Principal
+        <button onclick="window.showView('main')" class="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-black py-3 rounded-xl border border-zinc-800 transition-all text-[11px] uppercase tracking-widest flex items-center justify-center gap-2">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Regresar al Menú
         </button>
-        <button onclick="window.reiniciarConteoDiario()" class="w-full bg-red-950/20 hover:bg-red-950/40 text-red-400 hover:text-red-300 font-black py-2.5 rounded-xl border border-red-900/40 hover:border-red-900 transition-all text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
-            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Reiniciar Jornada
+
+        <button onclick="window.reiniciarConteoDiario()" class="w-full bg-red-950/20 hover:bg-red-950/40 text-red-400 hover:text-red-300 font-black py-3 rounded-xl border border-red-900/40 hover:border-red-900 transition-all text-[11px] uppercase tracking-widest flex items-center justify-center gap-2">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reiniciar Conteo
         </button>
     </div>
 </div>
