@@ -814,28 +814,31 @@ window.initCierreCaja = async () => {
     }
 };
 // 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
-window.ejecutarCierreCaja = async () => {
+    window.ejecutarCierreCaja = async () => {
     if (!currentClosingData) return showToast("No hay datos cargados para cerrar", "error");
     if (!closuresRef) return showToast("Error: Referencia de base de datos no lista", "error");
 
     try {
-        // Limpiamos la fecha para usarla como ID único del documento (Ej: "16-6-2026")
+        // Usamos la fecha limpia como identificador de documento único por día
         const docId = currentClosingData.date.replace(/\//g, "-");
         
-        // CORRECCIÓN DE ERROR: Usamos la referencia directa desde el objeto closuresRef
-        // Esto evita tener que usar la función "doc" que te da el ReferenceError.
-        // closuresRef.path nos da la ruta de la colección, y añadimos el ID del documento de forma segura.
-        
-        // Accedemos mediante el SDK cargado en el espacio de nombres global
+        // Cargamos el SDK de forma segura
         const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
         const docSecureRef = doc(closuresRef, docId);
         
+        // Guardamos en Firebase
         await setDoc(docSecureRef, currentClosingData);
 
         showToast(`Cierre de caja del día ${currentClosingData.date} procesado con éxito`, "success");
         
-        // Recargar la tabla inferior de historial automáticamente
+        // 1. Recargar la tabla inferior de historial antes de salir
         window.loadClosuresHistory();
+
+        // 2. REDIRECCIÓN AUTOMÁTICA: Volver a la pantalla de selección de tienda/sucursal
+        setTimeout(() => {
+            window.showView('store-select');
+        }, 1000); // Espera 1 segundo para que el usuario pueda ver el Toast de éxito limpia y cómodamente
+        
     } catch (err) {
         console.error("Error al guardar cierre:", err);
         showToast("Error al guardar el cierre en Firebase", "error");
