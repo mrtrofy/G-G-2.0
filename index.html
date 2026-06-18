@@ -776,80 +776,78 @@ let currentClosingData = null;
 
 // 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE (MODIFICADO SIN EL DESGLOSE REDUNDANTE EN LA TARJETA 1)
         window.ejecutarCierreCaja = async () => {
-            if (!closuresRef || !currentClosingData) {
-                showToast("No hay datos válidos para cerrar la caja", "error");
+            if (!closuresRef) {
+                showToast("Error: No se ha inicializado la referencia de cierres", "error");
                 return;
             }
 
             try {
-                const fechaCierre = currentClosingData.date || new Date().toLocaleDateString();
+                // 1. Capturamos la fecha actual de la pantalla
+                const dateEl = document.getElementById('closing-current-date');
+                const fechaCierre = dateEl ? dateEl.innerText.trim() : new Date().toLocaleDateString();
 
-                // Creamos el ID único basado en la fecha (Ej: "17-6-2026")
-                // Reemplazamos los slashes "/" por guiones para que Firebase no se confunda
+                // 2. Extraemos los montos acumulados directamente de la interfaz (tal como lo hacía tu código original)
+                const usdText = document.getElementById('close-sales-usd') ? document.getElementById('close-sales-usd').innerText : "$0.00";
+                const bsCashText = document.getElementById('close-sales-cash-bs') ? document.getElementById('close-sales-cash-bs').innerText : "0.00 Bs";
+                const pmText = document.getElementById('close-sales-mobile') ? document.getElementById('close-sales-mobile').innerText : "0.00 Bs";
+                const zelleText = document.getElementById('close-sales-zelle') ? document.getElementById('close-sales-zelle').innerText : "$0.00";
+
+                // 3. Limpiamos los textos para convertirlos en números puros
+                // Si la tarjeta de USD tiene un NETO (html interno), extraemos solo el número neto real
+                let finalUsd = 0;
+                const usdContainer = document.getElementById('close-sales-usd');
+                if (usdContainer && usdContainer.querySelector('.text-emerald-400')) {
+                    finalUsd = parseFloat(usdContainer.querySelector('.text-emerald-400').innerText.replace('$', '').trim());
+                } else {
+                    finalUsd = parseFloat(usdText.replace('$', '').trim()) || 0;
+                }
+
+                const finalBsCash = parseFloat(bsCashText.replace(' Bs', '').trim()) || 0;
+                const finalPm = parseFloat(pmText.replace(' Bs', '').trim()) || 0;
+                const finalZelle = parseFloat(zelleText.replace('$', '').trim()) || 0;
+
+                // 4. Calculamos los gastos del día buscando el contenedor de gastos de la tarjeta central
+                let totalGastos = 0;
+                const containerGastos = document.getElementById('close-expenses-container');
+                if (containerGastos) {
+                    const montosGastos = containerGastos.querySelectorAll('.text-red-400');
+                    montosGastos.forEach(span => {
+                        // Limpiamos el "-$" para sumar el monto puro del gasto
+                        const valor = parseFloat(span.innerText.replace('-$', '').trim()) || 0;
+                        totalGastos += valor;
+                    });
+                }
+
+                // 5. Creamos el ID único basado en la fecha (Ej: "17-6-2026") reemplazando "/" por "-"
                 const idDocumentoFijo = fechaCierre.replaceAll('/', '-');
 
-                // Aseguramos la estructura con los datos exactos en números flotantes
+                // 6. Armamos el objeto final para Firebase
                 const datosCierreFinal = {
                     date: fechaCierre,
-                    salesUsd: parseFloat(currentClosingData.salesUsd || 0),
-                    salesCashBs: parseFloat(currentClosingData.salesCashBs || 0),
-                    salesMobile: parseFloat(currentClosingData.salesMobile || 0),
-                    salesZelle: parseFloat(currentClosingData.salesZelle || 0),
-                    totalExpenses: parseFloat(currentClosingData.totalExpenses || 0), // Tus gastos guardados
-                    timestamp: currentClosingData.timestamp || new Date().getTime()
+                    salesUsd: finalUsd,
+                    salesCashBs: finalBsCash,
+                    salesMobile: finalPm,
+                    salesZelle: finalZelle,
+                    totalExpenses: totalGastos, // Guardamos los gastos auditados de hoy
+                    timestamp: new Date().getTime()
                 };
 
-                // Usamos 'doc' y 'setDoc' directamente ya que están disponibles globalmente en tu cabecera
+                // 7. Usamos doc y setDoc globales para sobreescribir el día actual
                 const docRefFijo = doc(closuresRef, idDocumentoFijo);
                 await setDoc(docRefFijo, datosCierreFinal);
                 
                 showToast("Cierre de Caja Guardado Exitosamente", "success");
+
+                // Refrescamos la tabla inferior del historial para ver el cambio reflejado de inmediato
+                if (typeof window.loadClosuresHistory === 'function') {
+                    window.loadClosuresHistory();
+                }
 
             } catch (err) {
                 console.error("Error crítico al procesar el documento del cierre:", err);
                 showToast("Error al guardar el cierre", "error");
             }
         };
-
-// 3. CARGAR EL HISTORIAL EN LA TABLA (Sin repetir días y sin mostrar montos)
-   window.loadClosuresHistory = async () => {
-    if (!closuresRef) return;
-    const container = document.getElementById('closures-history-container');
-    if (!container) return;
-    
-    try {
-        const { getDocs, query, orderBy } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-        const q = query(closuresRef, orderBy("timestamp", "desc"));
-        const snap = await getDocs(q);
-        
-        if (snap.empty) {
-            container.innerHTML = `<tr><td colspan="2" class="text-zinc-600 text-[10px] py-4 text-center">No hay históricos</td></tr>`;
-            return;
-        }
-
-        let html = "";
-        snap.forEach(docSnap => {
-            const c = docSnap.data();
-            const cleanDataStr = btoa(unescape(encodeURIComponent(JSON.stringify(c))));
-            
-            // Fila ultra compacta para que quepa en la tercera columna
-            html += `
-            <tr class="border-b border-zinc-900/50 font-mono text-[10px] hover:bg-zinc-900/30">
-                <td class="py-1.5 text-zinc-400 font-medium">${c.date}</td>
-                <td class="py-1.5 text-right">
-                    <button onclick="window.verDetallesCierre('${cleanDataStr}')" class="px-2 py-0.5 bg-zinc-950 hover:bg-zinc-900 border border-zinc-900 text-amber-500 text-[9px] font-black uppercase rounded transition-all">
-                        Detalles
-                    </button>
-                </td>
-            </tr>`;
-        });
-        
-        container.innerHTML = html;
-    } catch (err) {
-        console.error("Error al cargar historial:", err);
-    }
-};
-
     // 4. FUNCIÓN PARA MOSTRAR LOS DETALLES DEL CIERRE SELECCIONADO EN EL MODAL (DISEÑO PREMIUM)
         window.verDetallesCierre = (base64Str) => {
             try {
