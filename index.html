@@ -774,8 +774,7 @@ if (!currentStore || !db) {
         // Variable temporal para guardar el cálculo consolidado del día actual antes de subirlo
 let currentClosingData = null;
 
-// 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE
-// 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE (MODIFICADO PARA INTEGRAR GASTOS DEDUCIDOS)
+// 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE (MODIFICADO SIN EL DESGLOSE REDUNDANTE EN LA TARJETA 1)
 window.initCierreCaja = async () => {
     const hoy = new Date().toLocaleDateString();
     console.log("Fecha actual que buscamos:", hoy);
@@ -819,30 +818,22 @@ window.initCierreCaja = async () => {
             }
         });
 
-        // --- CALCULAR Y DETALLAR GASTOS DEL DÍA ---
+        // --- CALCULAR GASTOS DEL DÍA ---
         const expensesSnap = await getDocs(expensesRef);
         let totalGastosUsd = 0;
-        let gastosHtml = '';
 
         expensesSnap.forEach(doc => {
             const e = doc.data();
             if (e.date && normalizarFecha(e.date) === fechaHoyNormalizada) {
                 const amount = parseFloat(e.amount || 0);
                 totalGastosUsd += amount;
-                
-                // Construimos la lista detallada de cada gasto
-                gastosHtml += `
-                <div class="flex justify-between items-center text-[10px] text-red-400 font-mono pl-2 border-l border-red-900/50 mt-1">
-                    <span class="truncate max-w-[130px]">• ${e.title || 'Gasto'}:</span>
-                    <span>-$${amount.toFixed(2)}</span>
-                </div>`;
             }
         });
 
         // Restamos los gastos acumulados al efectivo en dólares bruto
         const efectivoNetoUsd = vEfectivoUsd - totalGastosUsd;
 
-        // Almacenamos el objeto estructurado (puedes añadir 'gastos: totalGastosUsd' si deseas guardarlo en el cierre final)
+        // Guardamos el objeto en la variable global para el momento del cierre
         currentClosingData = {
             date: hoy,
             salesUsd: vEfectivoUsd,
@@ -855,7 +846,7 @@ window.initCierreCaja = async () => {
 
         // --- PINTAR LOS RESULTADOS EN LA INTERFAZ ---
         
-        // Efectivo en Dólares (Muestra el tachado original y el neto en verde si hay gastos)
+        // Efectivo en Dólares (Muestra el bruto tachado y el neto real en verde si hay gastos)
         const usdContainer = document.getElementById('close-sales-usd');
         if (usdContainer) {
             if (totalGastosUsd > 0) {
@@ -873,27 +864,8 @@ window.initCierreCaja = async () => {
         if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `${vPagoMovil.toFixed(2)} Bs`;
         if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$${vZelle.toFixed(2)}`;
 
-        // --- INYECTAR EL DESGLOSE DE GASTOS EN EL RESUMEN CONSOLIDADO ---
-        const cardContainer = usdContainer ? usdContainer.closest('.space-y-2') : null;
-        if (cardContainer) {
-            // Eliminamos desglose viejo si ya existía para que no se duplique al recargar
-            const viejoDesglose = document.getElementById('desglose-gastos-consolidado');
-            if (viejoDesglose) viejoDesglose.remove();
-
-            if (totalGastosUsd > 0) {
-                const divDesglose = document.createElement('div');
-                divDesglose.id = 'desglose-gastos-consolidado';
-                divDesglose.className = "mt-3 pt-2 border-t border-zinc-900/80 space-y-1";
-                divDesglose.innerHTML = `
-                    <div class="flex justify-between items-center text-[10px] font-black uppercase text-red-500 tracking-wider">
-                        <span>Gastos Deducidos:</span>
-                        <span>-$${totalGastosUsd.toFixed(2)}</span>
-                    </div>
-                    ${gastosHtml}
-                `;
-                cardContainer.appendChild(divDesglose);
-            }
-        }
+        // NOTA: Se eliminó por completo el bloque que inyectaba el div 'desglose-gastos-consolidado' aquí.
+        // Ahora la tarjeta queda compacta y el desglose se ve exclusivamente en la ventana modal de detalles.
 
         // Refrescamos la tabla inferior del historial de cierres guardados
         window.loadClosuresHistory();
