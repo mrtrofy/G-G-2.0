@@ -785,87 +785,85 @@ if (!currentStore || !db) {
         // Variable temporal para guardar el cálculo consolidado del día actual antes de subirlo
 let currentClosingData = null;
 
-      window.initCierreCaja = async () => {
-    const hoy = new Date().toLocaleDateString();
-    console.log("Fecha actual que buscamos:", hoy);
+     window.initCierreCaja = async () => {
+            const hoy = new Date().toLocaleDateString();
+            console.log("Fecha actual que buscamos:", hoy);
 
-    // PASO CRÍTICO: Forzamos el reinicio visual instantáneo a 0
-    if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$0.00`;
-    if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `0.00 Bs`;
-    if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `0.00 Bs`;
-    if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$0.00`;
-    if (document.getElementById('closing-current-date')) document.getElementById('closing-current-date').innerText = hoy;
+            if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$0.00`;
+            if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `0.00 Bs`;
+            if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `0.00 Bs`;
+            if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$0.00`;
+            if (document.getElementById('closing-current-date')) document.getElementById('closing-current-date').innerText = hoy;
 
-    let vEfectivoUsd = 0, vEfectivoBs = 0, vPagoMovil = 0, vZelle = 0;
+            let vEfectivoUsd = 0, vEfectivoBs = 0, vPagoMovil = 0, vZelle = 0;
 
-    const normalizarFecha = (str) => {
-        if (!str) return '';
-        const partes = str.split('/');
-        if (partes.length < 3) return str;
-        const dia = parseInt(partes[0], 10);
-        const mes = parseInt(partes[1], 10);
-        const anio = parseInt(partes[2], 10);
-        return `${dia}-${mes}-${anio}`;
-    };
+            const normalizarFecha = (str) => {
+                if (!str) return '';
+                const partes = str.split('/');
+                if (partes.length < 3) return str;
+                const dia = parseInt(partes[0], 10);
+                const mes = parseInt(partes[1], 10);
+                const anio = parseInt(partes[2], 10);
+                return `${dia}-${mes}-${anio}`;
+            };
 
-    const fechaHoyNormalizada = normalizarFecha(hoy);
+            const fechaHoyNormalizada = normalizarFecha(hoy);
 
-    try {
-        if (!salesRef || !expensesRef) return;
-        
-        // --- CALCULAR VENTAS BRUTAS DEL DÍA ---
-        const salesSnap = await getDocs(salesRef);
-        salesSnap.forEach(doc => {
-            const order = doc.data();
-            if (order.date && normalizarFecha(order.date) === fechaHoyNormalizada && order.payments) {
-                order.payments.forEach(p => {
-                    if (p.method === 'USD') vEfectivoUsd += parseFloat(p.amount || 0);
-                    if (p.method === 'Efectivo BS') vEfectivoBs += parseFloat(p.amount || 0);
-                    if (p.method === 'P. Móvil BS') vPagoMovil += parseFloat(p.amount || 0);
-                    if (p.method === 'Zelle') vZelle += parseFloat(p.amount || 0);
+            try {
+                if (!salesRef || !expensesRef) return;
+                
+                // --- CALCULAR VENTAS BRUTAS ---
+                const salesSnap = await getDocs(salesRef);
+                salesSnap.forEach(doc => {
+                    const order = doc.data();
+                    if (order.date && normalizarFecha(order.date) === fechaHoyNormalizada && order.payments) {
+                        order.payments.forEach(p => {
+                            if (p.method === 'USD') vEfectivoUsd += parseFloat(p.amount || 0);
+                            if (p.method === 'Efectivo BS') vEfectivoBs += parseFloat(p.amount || 0);
+                            if (p.method === 'P. Móvil BS') vPagoMovil += parseFloat(p.amount || 0);
+                            if (p.method === 'Zelle') vZelle += parseFloat(p.amount || 0);
+                        });
+                    }
                 });
+
+                // --- CALCULAR GASTOS ---
+                const expensesSnap = await getDocs(expensesRef);
+                let totalGastosUsd = 0;
+                expensesSnap.forEach(doc => {
+                    const e = doc.data();
+                    if (e.date && normalizarFecha(e.date) === fechaHoyNormalizada) {
+                        totalGastosUsd += parseFloat(e.amount || 0);
+                    }
+                });
+
+                // Guardamos de forma global y explícita para asegurar el transporte de datos al guardar
+                currentClosingData = {
+                    date: hoy,
+                    salesUsd: vEfectivoUsd, 
+                    salesCashBs: vEfectivoBs,
+                    salesMobile: vPagoMovil,
+                    salesZelle: vZelle,
+                    totalExpenses: totalGastosUsd,
+                    rate: parseFloat(window.exchangeRate || 1), // Capturamos tu tasa de cambio real
+                    timestamp: new Date().getTime()
+                };
+
+                if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$${vEfectivoUsd.toFixed(2)}`;
+                if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `${vEfectivoBs.toFixed(2)} Bs`;
+                if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `${vPagoMovil.toFixed(2)} Bs`;
+                if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$${vZelle.toFixed(2)}`;
+
+                window.loadClosuresHistory();
+
+            } catch (e) {
+                console.error("Error crítico en initCierreCaja:", e);
             }
-        });
-
-        // --- CALCULAR TOTAL DE GASTOS DEL DÍA ---
-        const expensesSnap = await getDocs(expensesRef);
-        let totalGastosUsd = 0;
-
-        expensesSnap.forEach(doc => {
-            const e = doc.data();
-            if (e.date && normalizarFecha(e.date) === fechaHoyNormalizada) {
-                totalGastosUsd += parseFloat(e.amount || 0);
-            }
-        });
-
-        // Guardamos los datos exactos brutos por separado y guardamos la tasa activa del sistema (exchangeRate)
-        currentClosingData = {
-            date: hoy,
-            salesUsd: vEfectivoUsd, 
-            salesCashBs: vEfectivoBs,
-            salesMobile: vPagoMovil,
-            salesZelle: vZelle,
-            totalExpenses: totalGastosUsd,
-            rate: parseFloat(window.exchangeRate || 1), // CAPTURAMOS LA TASA EXACTA DEL SISTEMA
-            timestamp: new Date().getTime()
         };
-
-        // --- PINTAR LOS RESULTADOS EN LA INTERFAZ PRINCIPAL ---
-        if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$${vEfectivoUsd.toFixed(2)}`;
-        if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `${vEfectivoBs.toFixed(2)} Bs`;
-        if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `${vPagoMovil.toFixed(2)} Bs`;
-        if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$${vZelle.toFixed(2)}`;
-
-        window.loadClosuresHistory();
-
-    } catch (e) {
-        console.error("Error crítico en initCierreCaja:", e);
-    }
-};
 // 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
-       window.ejecutarCierreCaja = async () => {
+      window.ejecutarCierreCaja = async () => {
+            // Validamos que existan la referencia de la colección y los datos cargados en pantalla
             if (!closuresRef || !currentClosingData) {
-                showToast("No hay datos válidos para cerrar la caja", "error");
+                showToast("No hay datos cargados para realizar el cierre hoy", "error");
                 return;
             }
 
@@ -880,10 +878,11 @@ let currentClosingData = null;
                     salesMobile: parseFloat(currentClosingData.salesMobile || 0),
                     salesZelle: parseFloat(currentClosingData.salesZelle || 0),
                     totalExpenses: parseFloat(currentClosingData.totalExpenses || 0),
-                    rate: parseFloat(currentClosingData.rate || window.exchangeRate || 1), // Guardamos la tasa en la base de datos
+                    rate: parseFloat(currentClosingData.rate || window.exchangeRate || 1), // Persistencia de la tasa
                     timestamp: currentClosingData.timestamp || new Date().getTime()
                 };
 
+                // Guardamos directamente en la colección de cierres de la tienda activa
                 const docRefFijo = doc(closuresRef, idDocumentoFijo);
                 await setDoc(docRefFijo, datosCierreFinal);
                 
@@ -898,6 +897,9 @@ let currentClosingData = null;
                 showToast("Error al guardar el cierre", "error");
             }
         };
+        
+        // Enlazamos también de forma global para que el botón HTML lo encuentre directamente
+        window.ejecutarCierreCaja = window.ejecutarCierreCaja;
 
     // FUNCIÓN PARA REINICIAR EL CONTEO DIARIO DE VENTAS Y EGRESOS
 window.reiniciarConteoDiario = () => {
