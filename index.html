@@ -144,20 +144,45 @@
         };
 
        function setupFirestoreRefs() {
-    if (!db) return;
-    productsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`);
-    salesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_sales`);
-    incidentsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_incidents`);
-    expensesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_expenses`);
-    
-    // Lo pegas aquí (sin el 'const' porque ya lo declaramos en el Paso 1)
-    closuresRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_cierres`);
+            if (!db) return;
+            productsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`);
+            salesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_sales`);
+            incidentsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_incidents`);
+            expensesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_expenses`);
+            
+            // Lo pegas aquí (sin el 'const' porque ya lo declaramos en el Paso 1)
+            closuresRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_cierres`);
 
-    onSnapshot(productsRef, (snapshot) => {
-        stock = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        updateManualSearchList();
-    });
-}
+            // Escuchador de productos original de tu código
+            onSnapshot(productsRef, (snapshot) => {
+                stock = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateManualSearchList();
+            });
+
+            // ESCUCHADOR DE GASTOS EN TIEMPO REAL (Faltaba esto para pintar la tarjeta)
+            onSnapshot(expensesRef, (snapshot) => {
+                const container = document.getElementById('close-expenses-container');
+                if(!container) return;
+                container.innerHTML = "";
+
+                if (snapshot.empty) {
+                    container.innerHTML = `<p class="text-zinc-600 text-[10px] uppercase text-center py-4 font-bold font-mono">Sin gastos registrados</p>`;
+                    return;
+                }
+
+                let html = '';
+                snapshot.forEach(docSnap => {
+                    const e = docSnap.data();
+                    html += `
+                    <div class="flex justify-between items-center bg-zinc-950/40 p-2 rounded-xl border border-zinc-900/60 font-mono text-[11px] mb-1.5">
+                        <span class="text-zinc-400 uppercase truncate max-w-[140px]">${e.description || 'Gasto'}</span>
+                        <span class="text-red-400 font-black">-$${parseFloat(e.amount || 0).toFixed(2)}</span>
+                    </div>
+                    `;
+                });
+                container.innerHTML = html;
+            });
+        }
 
         function updateManualSearchList() {
             const select = document.getElementById('pos-manual-select');
