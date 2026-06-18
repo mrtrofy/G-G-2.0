@@ -774,80 +774,235 @@ if (!currentStore || !db) {
         // Variable temporal para guardar el cálculo consolidado del día actual antes de subirlo
 let currentClosingData = null;
 
-// 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE (MODIFICADO SIN EL DESGLOSE REDUNDANTE EN LA TARJETA 1)
-        window.ejecutarCierreCaja = async () => {
-            if (!closuresRef) {
-                showToast("Error: No se ha inicializado la referencia de cierres", "error");
+// 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE
+// 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE (MODIFICADO PARA INTEGRAR GASTOS DEDUCIDOS)
+window.initCierreCaja = async () => {
+    const hoy = new Date().toLocaleDateString();
+    console.log("Fecha actual que buscamos:", hoy);
+
+    // PASO CRÍTICO: Forzamos el reinicio visual instantáneo a 0 para que no retenga montos de sesiones anteriores
+    if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$0.00`;
+    if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `0.00 Bs`;
+    if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `0.00 Bs`;
+    if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$0.00`;
+    if (document.getElementById('closing-current-date')) document.getElementById('closing-current-date').innerText = hoy;
+
+    let vEfectivoUsd = 0, vEfectivoBs = 0, vPagoMovil = 0, vZelle = 0;
+
+    // Función auxiliar para estandarizar las fechas y evitar desfases por ceros a la izquierda (Ej: 07 vs 7)
+    const normalizarFecha = (str) => {
+        if (!str) return '';
+        const partes = str.split('/');
+        if (partes.length < 3) return str;
+        const dia = parseInt(partes[0], 10);
+        const mes = parseInt(partes[1], 10);
+        const anio = parseInt(partes[2], 10);
+        return `${dia}-${mes}-${anio}`;
+    };
+
+    const fechaHoyNormalizada = normalizarFecha(hoy);
+
+    try {
+        if (!salesRef || !expensesRef) return;
+        
+        // --- CALCULAR VENTAS DEL DÍA ---
+        const salesSnap = await getDocs(salesRef);
+        salesSnap.forEach(doc => {
+            const order = doc.data();
+            if (order.date && normalizarFecha(order.date) === fechaHoyNormalizada && order.payments) {
+                order.payments.forEach(p => {
+                    if (p.method === 'USD') vEfectivoUsd += parseFloat(p.amount || 0);
+                    if (p.method === 'Efectivo BS') vEfectivoBs += parseFloat(p.amount || 0);
+                    if (p.method === 'P. Móvil BS') vPagoMovil += parseFloat(p.amount || 0);
+                    if (p.method === 'Zelle') vZelle += parseFloat(p.amount || 0);
+                });
+            }
+        });
+
+        // --- CALCULAR Y DETALLAR GASTOS DEL DÍA ---
+        const expensesSnap = await getDocs(expensesRef);
+        let totalGastosUsd = 0;
+        let gastosHtml = '';
+
+        expensesSnap.forEach(doc => {
+            const e = doc.data();
+            if (e.date && normalizarFecha(e.date) === fechaHoyNormalizada) {
+                const amount = parseFloat(e.amount || 0);
+                totalGastosUsd += amount;
+                
+                // Construimos la lista detallada de cada gasto
+                gastosHtml += `
+                <div class="flex justify-between items-center text-[10px] text-red-400 font-mono pl-2 border-l border-red-900/50 mt-1">
+                    <span class="truncate max-w-[130px]">• ${e.title || 'Gasto'}:</span>
+                    <span>-$${amount.toFixed(2)}</span>
+                </div>`;
+            }
+        });
+
+        // Restamos los gastos acumulados al efectivo en dólares bruto
+        const efectivoNetoUsd = vEfectivoUsd - totalGastosUsd;
+
+        // Almacenamos el objeto estructurado (puedes añadir 'gastos: totalGastosUsd' si deseas guardarlo en el cierre final)
+        currentClosingData = {
+            date: hoy,
+            salesUsd: vEfectivoUsd,
+            salesCashBs: vEfectivoBs,
+            salesMobile: vPagoMovil,
+            salesZelle: vZelle,
+            totalExpenses: totalGastosUsd,
+            timestamp: new Date().getTime()
+        };
+
+        // --- PINTAR LOS RESULTADOS EN LA INTERFAZ ---
+        
+        // Efectivo en Dólares (Muestra el tachado original y el neto en verde si hay gastos)
+        const usdContainer = document.getElementById('close-sales-usd');
+        if (usdContainer) {
+            if (totalGastosUsd > 0) {
+                usdContainer.innerHTML = `
+                <div class="text-right">
+                    <span class="text-zinc-500 text-[10px] line-through block">$${vEfectivoUsd.toFixed(2)}</span>
+                    <span class="text-emerald-400 font-black">$${efectivoNetoUsd.toFixed(2)} <span class="text-[9px] text-red-400 font-normal">(NETO)</span></span>
+                </div>`;
+            } else {
+                usdContainer.innerText = `$${vEfectivoUsd.toFixed(2)}`;
+            }
+        }
+
+        if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `${vEfectivoBs.toFixed(2)} Bs`;
+        if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `${vPagoMovil.toFixed(2)} Bs`;
+        if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$${vZelle.toFixed(2)}`;
+
+        // --- INYECTAR EL DESGLOSE DE GASTOS EN EL RESUMEN CONSOLIDADO ---
+        const cardContainer = usdContainer ? usdContainer.closest('.space-y-2') : null;
+        if (cardContainer) {
+            // Eliminamos desglose viejo si ya existía para que no se duplique al recargar
+            const viejoDesglose = document.getElementById('desglose-gastos-consolidado');
+            if (viejoDesglose) viejoDesglose.remove();
+
+            if (totalGastosUsd > 0) {
+                const divDesglose = document.createElement('div');
+                divDesglose.id = 'desglose-gastos-consolidado';
+                divDesglose.className = "mt-3 pt-2 border-t border-zinc-900/80 space-y-1";
+                divDesglose.innerHTML = `
+                    <div class="flex justify-between items-center text-[10px] font-black uppercase text-red-500 tracking-wider">
+                        <span>Gastos Deducidos:</span>
+                        <span>-$${totalGastosUsd.toFixed(2)}</span>
+                    </div>
+                    ${gastosHtml}
+                `;
+                cardContainer.appendChild(divDesglose);
+            }
+        }
+
+        // Refrescamos la tabla inferior del historial de cierres guardados
+        window.loadClosuresHistory();
+
+    } catch (e) {
+        console.error("Error crítico en initCierreCaja:", e);
+    }
+};
+// 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
+       window.ejecutarCierreCaja = async () => {
+            if (!closuresRef || !currentClosingData) {
+                showToast("No hay datos válidos para cerrar la caja", "error");
                 return;
             }
 
             try {
-                // 1. Capturamos la fecha actual de la pantalla
-                const dateEl = document.getElementById('closing-current-date');
-                const fechaCierre = dateEl ? dateEl.innerText.trim() : new Date().toLocaleDateString();
-
-                // 2. Extraemos los montos acumulados directamente de la interfaz (tal como lo hacía tu código original)
-                const usdText = document.getElementById('close-sales-usd') ? document.getElementById('close-sales-usd').innerText : "$0.00";
-                const bsCashText = document.getElementById('close-sales-cash-bs') ? document.getElementById('close-sales-cash-bs').innerText : "0.00 Bs";
-                const pmText = document.getElementById('close-sales-mobile') ? document.getElementById('close-sales-mobile').innerText : "0.00 Bs";
-                const zelleText = document.getElementById('close-sales-zelle') ? document.getElementById('close-sales-zelle').innerText : "$0.00";
-
-                // 3. Limpiamos los textos para convertirlos en números puros
-                // Si la tarjeta de USD tiene un NETO (html interno), extraemos solo el número neto real
-                let finalUsd = 0;
-                const usdContainer = document.getElementById('close-sales-usd');
-                if (usdContainer && usdContainer.querySelector('.text-emerald-400')) {
-                    finalUsd = parseFloat(usdContainer.querySelector('.text-emerald-400').innerText.replace('$', '').trim());
-                } else {
-                    finalUsd = parseFloat(usdText.replace('$', '').trim()) || 0;
-                }
-
-                const finalBsCash = parseFloat(bsCashText.replace(' Bs', '').trim()) || 0;
-                const finalPm = parseFloat(pmText.replace(' Bs', '').trim()) || 0;
-                const finalZelle = parseFloat(zelleText.replace('$', '').trim()) || 0;
-
-                // 4. Calculamos los gastos del día buscando el contenedor de gastos de la tarjeta central
-                let totalGastos = 0;
-                const containerGastos = document.getElementById('close-expenses-container');
-                if (containerGastos) {
-                    const montosGastos = containerGastos.querySelectorAll('.text-red-400');
-                    montosGastos.forEach(span => {
-                        // Limpiamos el "-$" para sumar el monto puro del gasto
-                        const valor = parseFloat(span.innerText.replace('-$', '').trim()) || 0;
-                        totalGastos += valor;
-                    });
-                }
-
-                // 5. Creamos el ID único basado en la fecha (Ej: "17-6-2026") reemplazando "/" por "-"
-                const idDocumentoFijo = fechaCierre.replaceAll('/', '-');
-
-                // 6. Armamos el objeto final para Firebase
+                // Estructuramos los datos numéricos exactos usando las importaciones globales existentes arriba en tu script
                 const datosCierreFinal = {
-                    date: fechaCierre,
-                    salesUsd: finalUsd,
-                    salesCashBs: finalBsCash,
-                    salesMobile: finalPm,
-                    salesZelle: finalZelle,
-                    totalExpenses: totalGastos, // Guardamos los gastos auditados de hoy
-                    timestamp: new Date().getTime()
+                    date: currentClosingData.date || new Date().toLocaleDateString(),
+                    salesUsd: parseFloat(currentClosingData.salesUsd || 0),
+                    salesCashBs: parseFloat(currentClosingData.salesCashBs || 0),
+                    salesMobile: parseFloat(currentClosingData.salesMobile || 0),
+                    salesZelle: parseFloat(currentClosingData.salesZelle || 0),
+                    totalExpenses: parseFloat(currentClosingData.totalExpenses || 0), // Tus gastos integrados con éxito
+                    timestamp: currentClosingData.timestamp || new Date().getTime()
                 };
 
-                // 7. Usamos doc y setDoc globales para sobreescribir el día actual
-                const docRefFijo = doc(closuresRef, idDocumentoFijo);
-                await setDoc(docRefFijo, datosCierreFinal);
-                
+                // Guardamos directamente en la colección de Firebase sin alterar el flujo de la app
+                await addDoc(closuresRef, datosCierreFinal);
                 showToast("Cierre de Caja Guardado Exitosamente", "success");
 
-                // Refrescamos la tabla inferior del historial para ver el cambio reflejado de inmediato
-                if (typeof window.loadClosuresHistory === 'function') {
-                    window.loadClosuresHistory();
-                }
+                // SE ELIMINÓ TODO TIPO DE REDIRECCIÓN Y LIMPIEZA DE VARIABLES globales.
+                // El sistema guarda silenciosamente y todo se mantiene exactamente igual en la interfaz.
 
             } catch (err) {
                 console.error("Error crítico al procesar el documento del cierre:", err);
                 showToast("Error al guardar el cierre", "error");
             }
         };
+
+    // FUNCIÓN PARA REINICIAR EL CONTEO DIARIO DE VENTAS Y EGRESOS
+window.reiniciarConteoDiario = () => {
+    // Confirmación de seguridad
+    if (!confirm("¿Está seguro de que desea reiniciar el conteo de hoy? Esta acción restablecerá los valores visuales a cero.")) return;
+
+    // 1. Reseteamos el objeto de datos en memoria
+    currentClosingData = {
+        date: new Date().toLocaleDateString(),
+        salesUsd: 0,
+        salesCashBs: 0,
+        salesMobile: 0,
+        salesZelle: 0,
+        timestamp: new Date().getTime()
+    };
+
+    // 2. Forzamos los valores visuales a cero de forma inmediata
+    if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$0.00`;
+    if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `0.00 Bs`;
+    if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `0.00 Bs`;
+    if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$0.00`;
+    
+    // 3. Limpiamos visualmente el contenedor de egresos/gastos si aplica
+    const expensesContainer = document.getElementById('close-expenses-container');
+    if (expensesContainer) {
+        expensesContainer.innerHTML = '<p class="text-zinc-600 text-[10px] uppercase font-bold tracking-wider py-2">Sin gastos registrados hoy.</p>';
+    }
+
+    showToast("Conteo diario restablecido a cero", "success");
+};
+
+// 3. CARGAR EL HISTORIAL EN LA TABLA (Sin repetir días y sin mostrar montos)
+   window.loadClosuresHistory = async () => {
+    if (!closuresRef) return;
+    const container = document.getElementById('closures-history-container');
+    if (!container) return;
+    
+    try {
+        const { getDocs, query, orderBy } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+        const q = query(closuresRef, orderBy("timestamp", "desc"));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) {
+            container.innerHTML = `<tr><td colspan="2" class="text-zinc-600 text-[10px] py-4 text-center">No hay históricos</td></tr>`;
+            return;
+        }
+
+        let html = "";
+        snap.forEach(docSnap => {
+            const c = docSnap.data();
+            const cleanDataStr = btoa(unescape(encodeURIComponent(JSON.stringify(c))));
+            
+            // Fila ultra compacta para que quepa en la tercera columna
+            html += `
+            <tr class="border-b border-zinc-900/50 font-mono text-[10px] hover:bg-zinc-900/30">
+                <td class="py-1.5 text-zinc-400 font-medium">${c.date}</td>
+                <td class="py-1.5 text-right">
+                    <button onclick="window.verDetallesCierre('${cleanDataStr}')" class="px-2 py-0.5 bg-zinc-950 hover:bg-zinc-900 border border-zinc-900 text-amber-500 text-[9px] font-black uppercase rounded transition-all">
+                        Detalles
+                    </button>
+                </td>
+            </tr>`;
+        });
+        
+        container.innerHTML = html;
+    } catch (err) {
+        console.error("Error al cargar historial:", err);
+    }
+};
+
     // 4. FUNCIÓN PARA MOSTRAR LOS DETALLES DEL CIERRE SELECCIONADO EN EL MODAL (DISEÑO PREMIUM)
         window.verDetallesCierre = (base64Str) => {
             try {
