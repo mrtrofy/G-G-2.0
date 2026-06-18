@@ -958,83 +958,68 @@ window.reiniciarConteoDiario = () => {
 };
 
     // 4. FUNCIÓN PARA MOSTRAR LOS DETALLES DEL CIERRE SELECCIONADO EN EL MODAL (DISEÑO PREMIUM)
-        window.verDetallesCierre = (base64Str) => {
+       window.verDetallesCierre = (base64Str) => {
             try {
-                // Decodificación segura en formato Base64 original de tu código
                 const c = JSON.parse(decodeURIComponent(escape(atob(base64Str))));
                 
-                // Ponemos la fecha en el título del modal
                 if (document.getElementById('detail-closure-date')) {
                     document.getElementById('detail-closure-date').innerText = c.date || 'Sin Fecha';
                 }
 
-                // Extraemos los montos del cierre (Efectivo bruto y gastos deducidos)
                 const salesUsd = parseFloat(c.salesUsd || 0);
+                const salesCashBs = parseFloat(c.salesCashBs || 0);
+                const salesMobile = parseFloat(c.salesMobile || 0);
+                const salesZelle = parseFloat(c.salesZelle || 0);
                 const totalExpenses = parseFloat(c.totalExpenses || 0);
-                const netoUsd = salesUsd - totalExpenses; // La resta para el Neto Real
 
+                // OPERACIÓN MATEMÁTICA EN UNA SOLA LÍNEA: Ventas brutas totales menos gastos
+                const netoRealCaja = salesUsd - totalExpenses; 
+
+                // 1. Inyectamos los montos exactos y puros de las transacciones hechas
                 const salesContainer = document.getElementById('detail-closure-sales');
                 if (salesContainer) {
-                    // Si hubo gastos en ese cierre guardado, tachamos el bruto original y mostramos el Neto real en verde
-                    let usdHtml = '';
-                    if (totalExpenses > 0) {
-                        usdHtml = `
-                        <div class="flex justify-between items-center">
-                            <span class="text-zinc-500 font-bold">EFECTIVO ($):</span>
-                            <div class="text-right">
-                                <span class="text-zinc-600 text-[10px] line-through block">$${salesUsd.toFixed(2)}</span>
-                                <span class="text-emerald-400 font-black">$${netoUsd.toFixed(2)} <span class="text-[9px] text-red-400 font-normal">(NETO)</span></span>
-                            </div>
-                        </div>`;
-                    } else {
-                        usdHtml = `
+                    salesContainer.innerHTML = `
                         <div class="flex justify-between items-center">
                             <span class="text-zinc-500 font-bold">EFECTIVO ($):</span>
                             <span class="text-white font-black">$${salesUsd.toFixed(2)}</span>
-                        </div>`;
-                    }
-
-                    salesContainer.innerHTML = `
-                        ${usdHtml}
+                        </div>
                         <div class="flex justify-between items-center border-t border-zinc-900/50 pt-1">
                             <span class="text-zinc-500 font-bold">EFECTIVO (Bs):</span>
-                            <span class="text-white font-black">${parseFloat(c.salesCashBs || 0).toFixed(2)} Bs</span>
+                            <span class="text-white font-black">${salesCashBs.toFixed(2)} Bs</span>
                         </div>
                         <div class="flex justify-between items-center border-t border-zinc-900/50 pt-1">
                             <span class="text-zinc-500 font-bold">P. MÓVIL (Bs):</span>
-                            <span class="text-white font-black">${parseFloat(c.salesMobile || 0).toFixed(2)} Bs</span>
+                            <span class="text-white font-black">${salesMobile.toFixed(2)} Bs</span>
                         </div>
                         <div class="flex justify-between items-center border-t border-zinc-900/50 pt-1">
                             <span class="text-zinc-500 font-bold">ZELLE ($):</span>
-                            <span class="text-white font-black">$${parseFloat(c.salesZelle || 0).toFixed(2)}</span>
+                            <span class="text-white font-black">$${salesZelle.toFixed(2)}</span>
                         </div>
                     `;
                 }
 
+                // 2. Separamos en campos independientes los gastos y el neto real de auditoría
                 const expensesContainer = document.getElementById('detail-closure-expenses');
                 if (expensesContainer) {
-                    if (totalExpenses > 0) {
-                        expensesContainer.innerHTML = `
-                            <div class="space-y-1.5">
-                                <div class="flex justify-between items-center text-red-400 font-black uppercase text-[10px] tracking-wider mb-1">
-                                    <span>Gastos Deducidos:</span>
-                                    <span>-$${totalExpenses.toFixed(2)}</span>
-                                </div>
-                                <p class="text-[10px] text-zinc-500 leading-relaxed italic border-l-2 border-zinc-800 pl-2">
-                                    Este cierre fue auditado restando un total de $${totalExpenses.toFixed(2)} acumulados en egresos directos de caja.
-                                </p>
+                    expensesContainer.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center bg-red-950/20 border border-red-900/30 p-2 rounded-lg">
+                                <span class="text-red-400 font-bold text-[10px] uppercase tracking-wider">Gastos de Caja:</span>
+                                <span class="text-red-400 font-mono font-black">-$${totalExpenses.toFixed(2)}</span>
                             </div>
-                        `;
-                    } else {
-                        expensesContainer.innerHTML = `
-                            <div class="flex items-center gap-1.5 text-emerald-500 font-bold text-[10px] uppercase tracking-wider">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Sin novedades (Caja Limpia)
+
+                            <div class="flex justify-between items-center bg-emerald-950/20 border border-emerald-900/30 p-2 rounded-lg">
+                                <span class="text-emerald-400 font-bold text-[10px] uppercase tracking-wider">Cierre Neto Real ($):</span>
+                                <span class="text-emerald-400 font-mono font-black">$${netoRealCaja.toFixed(2)}</span>
                             </div>
-                        `;
-                    }
+                            
+                            <p class="text-[9px] text-zinc-500 italic text-center mt-1">
+                                Fórmula aplicada: Efectivo ($${salesUsd.toFixed(2)}) - Gastos ($${totalExpenses.toFixed(2)}) = Neto ($${netoRealCaja.toFixed(2)})
+                            </p>
+                        </div>
+                    `;
                 }
 
-                // Desbloqueamos visualmente el modal abriéndolo
                 document.getElementById('modal-closure-details').classList.add('active-modal');
 
             } catch (err) {
