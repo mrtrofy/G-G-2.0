@@ -903,16 +903,14 @@ window.initCierreCaja = async () => {
     }
 };
 // 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
-        window.ejecutarCierreCaja = async () => {
+       window.ejecutarCierreCaja = async () => {
             if (!closuresRef || !currentClosingData) {
                 showToast("No hay datos válidos para cerrar la caja", "error");
                 return;
             }
 
             try {
-                const { addDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-                
-                // Aseguramos que los valores sean numéricos exactos antes de enviarlos a Firebase
+                // Aseguramos que los valores sean numéricos exactos usando las importaciones globales existentes
                 const datosCierreFinal = {
                     date: currentClosingData.date || new Date().toLocaleDateString(),
                     salesUsd: parseFloat(currentClosingData.salesUsd || 0),
@@ -923,11 +921,11 @@ window.initCierreCaja = async () => {
                     timestamp: currentClosingData.timestamp || new Date().getTime()
                 };
 
-                // Guardamos en la base de datos
+                // Guardamos directamente usando el addDoc que ya está importado arriba en tu script
                 await addDoc(closuresRef, datosCierreFinal);
                 showToast("Cierre de Caja Guardado Exitosamente", "success");
 
-                // PASO CLÍTICO: Limpiamos las variables globales de sesión para que no arrastren basura
+                // Limpiamos las variables globales de sesión de la tienda activa
                 currentStore = null;
                 currentClosingData = null;
 
@@ -936,9 +934,10 @@ window.initCierreCaja = async () => {
 
             } catch (err) {
                 console.error("Error crítico al procesar el documento del cierre:", err);
-                showToast("Error de conexión al guardar el cierre", "error");
+                showToast("Error al guardar el cierre", "error");
             }
         };
+        
     // FUNCIÓN PARA REINICIAR EL CONTEO DIARIO DE VENTAS Y EGRESOS
 window.reiniciarConteoDiario = () => {
     // Confirmación de seguridad
