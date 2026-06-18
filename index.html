@@ -143,15 +143,15 @@
             }
         };
 
-       function setupFirestoreRefs() {
+      function setupFirestoreRefs() {
             if (!db) return;
             productsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`);
             salesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_sales`);
             incidentsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_incidents`);
             expensesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_expenses`);
             
-            // Lo pegas aquí (sin el 'const' porque ya lo declaramos en el Paso 1)
-            closuresRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_cierres`);
+            // CORREGIDO: Cambiamos '_cierres' por '_closures' para que coincida perfectamente con todo tu sistema
+            closuresRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_closures`);
 
             // Escuchador de productos original de tu código
             onSnapshot(productsRef, (snapshot) => {
@@ -159,7 +159,7 @@
                 updateManualSearchList();
             });
 
-            // ESCUCHADOR DE GASTOS EN TIEMPO REAL (Faltaba esto para pintar la tarjeta)
+            // ESCUCHADOR DE GASTOS EN TIEMPO REAL
             onSnapshot(expensesRef, (snapshot) => {
                 const container = document.getElementById('close-expenses-container');
                 if(!container) return;
@@ -183,7 +183,6 @@
                 container.innerHTML = html;
             });
         }
-
         function updateManualSearchList() {
             const select = document.getElementById('pos-manual-select');
             if(!select) return;
