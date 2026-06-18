@@ -167,11 +167,11 @@
                 const opt = document.createElement('option');
                 opt.value = p.barcode;
                 
-                // Obtenemos la categoría o le asignamos "General" si no tiene una
+                // Se obtiene la propiedad category del producto (o 'General' si no tiene)
                 const categoria = p.category ? p.category.toUpperCase() : 'GENERAL';
                 
-                // Agregamos la categoría al inicio del texto de la opción
-                opt.textContent = `[${categoria}] ${p.name} - ${p.size}/${p.color} - $${p.price}`;
+                // Se añade la categoría al final del formato de texto original
+                opt.textContent = `${p.name} - ${p.size}/${p.color} - $${p.price} - ${categoria}`;
                 select.appendChild(opt);
             });
         }
