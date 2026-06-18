@@ -966,16 +966,18 @@ window.reiniciarConteoDiario = () => {
                     document.getElementById('detail-closure-date').innerText = c.date || 'Sin Fecha';
                 }
 
+                // Recuperamos los valores puros que se guardaron en la base de datos
+                // Como en initCierreCaja 'salesUsd' ya guarda el monto de transacciones brutas, lo leemos directo
                 const salesUsd = parseFloat(c.salesUsd || 0);
                 const salesCashBs = parseFloat(c.salesCashBs || 0);
                 const salesMobile = parseFloat(c.salesMobile || 0);
                 const salesZelle = parseFloat(c.salesZelle || 0);
                 const totalExpenses = parseFloat(c.totalExpenses || 0);
 
-                // OPERACIÓN MATEMÁTICA EN UNA SOLA LÍNEA: Ventas brutas totales menos gastos
+                // OPERACIÓN MATEMÁTICA: Ventas brutas en efectivo dólares menos los gastos del día
                 const netoRealCaja = salesUsd - totalExpenses; 
 
-                // 1. Inyectamos los montos exactos y puros de las transacciones hechas
+                // 1. Inyectamos los montos limpios y exactos de cada transacción sin alterar el Efectivo ($)
                 const salesContainer = document.getElementById('detail-closure-sales');
                 if (salesContainer) {
                     salesContainer.innerHTML = `
@@ -998,7 +1000,7 @@ window.reiniciarConteoDiario = () => {
                     `;
                 }
 
-                // 2. Separamos en campos independientes los gastos y el neto real de auditoría
+                // 2. Desglose inferior de los gastos y el cálculo final de la auditoría en vivo
                 const expensesContainer = document.getElementById('detail-closure-expenses');
                 if (expensesContainer) {
                     expensesContainer.innerHTML = `
@@ -1014,7 +1016,7 @@ window.reiniciarConteoDiario = () => {
                             </div>
                             
                             <p class="text-[9px] text-zinc-500 italic text-center mt-1">
-                                Fórmula aplicada: Efectivo ($${salesUsd.toFixed(2)}) - Gastos ($${totalExpenses.toFixed(2)}) = Neto ($${netoRealCaja.toFixed(2)})
+                                Operación: Efectivo ($${salesUsd.toFixed(2)}) - Gastos ($${totalExpenses.toFixed(2)}) = Neto ($${netoRealCaja.toFixed(2)})
                             </p>
                         </div>
                     `;
