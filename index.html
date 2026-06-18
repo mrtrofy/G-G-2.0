@@ -775,6 +775,7 @@ if (!currentStore || !db) {
 let currentClosingData = null;
 
 // 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE
+// 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE (MODIFICADO PARA INTEGRAR GASTOS DEDUCIDOS)
 window.initCierreCaja = async () => {
     const hoy = new Date().toLocaleDateString();
     console.log("Fecha actual que buscamos:", hoy);
@@ -787,13 +788,12 @@ window.initCierreCaja = async () => {
     if (document.getElementById('closing-current-date')) document.getElementById('closing-current-date').innerText = hoy;
 
     let vEfectivoUsd = 0, vEfectivoBs = 0, vPagoMovil = 0, vZelle = 0;
-    
+
     // Función auxiliar para estandarizar las fechas y evitar desfases por ceros a la izquierda (Ej: 07 vs 7)
     const normalizarFecha = (str) => {
         if (!str) return '';
         const partes = str.split('/');
         if (partes.length < 3) return str;
-        // Mapeamos a números para quitar ceros iniciales flotantes y rearmamos un formato limpio estándar
         const dia = parseInt(partes[0], 10);
         const mes = parseInt(partes[1], 10);
         const anio = parseInt(partes[2], 10);
@@ -803,13 +803,12 @@ window.initCierreCaja = async () => {
     const fechaHoyNormalizada = normalizarFecha(hoy);
 
     try {
-        if (!salesRef) return;
+        if (!salesRef || !expensesRef) return;
+        
+        // --- CALCULAR VENTAS DEL DÍA ---
         const salesSnap = await getDocs(salesRef);
-
         salesSnap.forEach(doc => {
             const order = doc.data();
-            
-            // Si la venta tiene fecha, las comparamos bajo el mismo estándar estricto
             if (order.date && normalizarFecha(order.date) === fechaHoyNormalizada && order.payments) {
                 order.payments.forEach(p => {
                     if (p.method === 'USD') vEfectivoUsd += parseFloat(p.amount || 0);
@@ -820,25 +819,85 @@ window.initCierreCaja = async () => {
             }
         });
 
-        // Almacenamos el objeto estructurado para cuando se presione el botón procesar cierre
+        // --- CALCULAR Y DETALLAR GASTOS DEL DÍA ---
+        const expensesSnap = await getDocs(expensesRef);
+        let totalGastosUsd = 0;
+        let gastosHtml = '';
+
+        expensesSnap.forEach(doc => {
+            const e = doc.data();
+            if (e.date && normalizarFecha(e.date) === fechaHoyNormalizada) {
+                const amount = parseFloat(e.amount || 0);
+                totalGastosUsd += amount;
+                
+                // Construimos la lista detallada de cada gasto
+                gastosHtml += `
+                <div class="flex justify-between items-center text-[10px] text-red-400 font-mono pl-2 border-l border-red-900/50 mt-1">
+                    <span class="truncate max-w-[130px]">• ${e.title || 'Gasto'}:</span>
+                    <span>-$${amount.toFixed(2)}</span>
+                </div>`;
+            }
+        });
+
+        // Restamos los gastos acumulados al efectivo en dólares bruto
+        const efectivoNetoUsd = vEfectivoUsd - totalGastosUsd;
+
+        // Almacenamos el objeto estructurado (puedes añadir 'gastos: totalGastosUsd' si deseas guardarlo en el cierre final)
         currentClosingData = {
             date: hoy,
             salesUsd: vEfectivoUsd,
             salesCashBs: vEfectivoBs,
             salesMobile: vPagoMovil,
             salesZelle: vZelle,
+            totalExpenses: totalGastosUsd,
             timestamp: new Date().getTime()
         };
 
-        // Pintamos los resultados finales calculados en la interfaz (Si no hay ventas hoy, se mantendrán en $0.00)
-        if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$${vEfectivoUsd.toFixed(2)}`;
+        // --- PINTAR LOS RESULTADOS EN LA INTERFAZ ---
+        
+        // Efectivo en Dólares (Muestra el tachado original y el neto en verde si hay gastos)
+        const usdContainer = document.getElementById('close-sales-usd');
+        if (usdContainer) {
+            if (totalGastosUsd > 0) {
+                usdContainer.innerHTML = `
+                <div class="text-right">
+                    <span class="text-zinc-500 text-[10px] line-through block">$${vEfectivoUsd.toFixed(2)}</span>
+                    <span class="text-emerald-400 font-black">$${efectivoNetoUsd.toFixed(2)} <span class="text-[9px] text-red-400 font-normal">(NETO)</span></span>
+                </div>`;
+            } else {
+                usdContainer.innerText = `$${vEfectivoUsd.toFixed(2)}`;
+            }
+        }
+
         if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `${vEfectivoBs.toFixed(2)} Bs`;
         if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `${vPagoMovil.toFixed(2)} Bs`;
         if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$${vZelle.toFixed(2)}`;
-        
+
+        // --- INYECTAR EL DESGLOSE DE GASTOS EN EL RESUMEN CONSOLIDADO ---
+        const cardContainer = usdContainer ? usdContainer.closest('.space-y-2') : null;
+        if (cardContainer) {
+            // Eliminamos desglose viejo si ya existía para que no se duplique al recargar
+            const viejoDesglose = document.getElementById('desglose-gastos-consolidado');
+            if (viejoDesglose) viejoDesglose.remove();
+
+            if (totalGastosUsd > 0) {
+                const divDesglose = document.createElement('div');
+                divDesglose.id = 'desglose-gastos-consolidado';
+                divDesglose.className = "mt-3 pt-2 border-t border-zinc-900/80 space-y-1";
+                divDesglose.innerHTML = `
+                    <div class="flex justify-between items-center text-[10px] font-black uppercase text-red-500 tracking-wider">
+                        <span>Gastos Deducidos:</span>
+                        <span>-$${totalGastosUsd.toFixed(2)}</span>
+                    </div>
+                    ${gastosHtml}
+                `;
+                cardContainer.appendChild(divDesglose);
+            }
+        }
+
         // Refrescamos la tabla inferior del historial de cierres guardados
         window.loadClosuresHistory();
-        
+
     } catch (e) {
         console.error("Error crítico en initCierreCaja:", e);
     }
