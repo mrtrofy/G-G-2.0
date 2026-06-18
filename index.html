@@ -150,10 +150,10 @@
             incidentsRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_incidents`);
             expensesRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_expenses`);
             
-            // CORREGIDO: Cambiamos '_cierres' por '_closures' para que coincida perfectamente con todo tu sistema
+            // Se le asigna la colección sin el 'const' para que la lea todo el archivo index.html
             closuresRef = collection(db, 'artifacts', appId, 'public', 'data', `${currentStore}_closures`);
 
-            // Escuchador de productos original de tu código
+            // Tu escuchador de productos original...
             onSnapshot(productsRef, (snapshot) => {
                 stock = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 updateManualSearchList();
