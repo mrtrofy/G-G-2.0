@@ -910,23 +910,23 @@ window.initCierreCaja = async () => {
             }
 
             try {
-                // Aseguramos que los valores sean numéricos exactos usando las importaciones globales existentes
+                // Estructuramos los datos numéricos exactos usando las importaciones globales existentes arriba en tu script
                 const datosCierreFinal = {
                     date: currentClosingData.date || new Date().toLocaleDateString(),
                     salesUsd: parseFloat(currentClosingData.salesUsd || 0),
                     salesCashBs: parseFloat(currentClosingData.salesCashBs || 0),
                     salesMobile: parseFloat(currentClosingData.salesMobile || 0),
                     salesZelle: parseFloat(currentClosingData.salesZelle || 0),
-                    totalExpenses: parseFloat(currentClosingData.totalExpenses || 0), // Guarda tus gastos exitosamente
+                    totalExpenses: parseFloat(currentClosingData.totalExpenses || 0), // Tus gastos integrados con éxito
                     timestamp: currentClosingData.timestamp || new Date().getTime()
                 };
 
-                // Guardamos directamente en tu colección de Firebase
+                // Guardamos directamente en la colección de Firebase sin alterar el flujo de la app
                 await addDoc(closuresRef, datosCierreFinal);
                 showToast("Cierre de Caja Guardado Exitosamente", "success");
 
-                // NOTA: Se eliminó la limpieza de variables y el window.showView('stores')
-                // El sistema guarda y se queda fijo en la misma pantalla sin moverse.
+                // SE ELIMINÓ TODO TIPO DE REDIRECCIÓN Y LIMPIEZA DE VARIABLES globales.
+                // El sistema guarda silenciosamente y todo se mantiene exactamente igual en la interfaz.
 
             } catch (err) {
                 console.error("Error crítico al procesar el documento del cierre:", err);
