@@ -494,13 +494,9 @@ if (!currentStore || !db) {
             const p = stock.find(item => item.id === id);
             if (!p) return;
             editingProductId = id; 
+            document.getElementById('ed-barcode').value = p.barcode;
             document.getElementById('ed-name').value = p.name;
             document.getElementById('ed-category').value = p.category || ''; 
-            
-            // RESTAURADOS: Código de barras y Talla mapeados al formulario
-            document.getElementById('ed-barcode').value = p.barcode || '';
-            document.getElementById('ed-size').value = p.size || '';
-            
             document.getElementById('ed-qty').value = p.quantity;
             document.getElementById('ed-price').value = p.price;
             document.getElementById('modal-edit').classList.add('active-modal');
