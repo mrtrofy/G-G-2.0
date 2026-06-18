@@ -784,7 +784,8 @@ if (!currentStore || !db) {
         // Variable temporal para guardar el cálculo consolidado del día actual antes de subirlo
 let currentClosingData = null;
 
-     window.initCierreCaja = async () => {
+    // 1. TU FUNCIÓN PARA INICIALIZAR EL CIERRE CORREGIDA
+        window.initCierreCaja = async () => {
             const hoy = new Date().toLocaleDateString();
             console.log("Fecha actual que buscamos:", hoy);
 
@@ -811,7 +812,6 @@ let currentClosingData = null;
             try {
                 if (!salesRef || !expensesRef) return;
                 
-                // --- CALCULAR VENTAS BRUTAS ---
                 const salesSnap = await getDocs(salesRef);
                 salesSnap.forEach(doc => {
                     const order = doc.data();
@@ -825,7 +825,6 @@ let currentClosingData = null;
                     }
                 });
 
-                // --- CALCULAR GASTOS ---
                 const expensesSnap = await getDocs(expensesRef);
                 let totalGastosUsd = 0;
                 expensesSnap.forEach(doc => {
@@ -835,7 +834,7 @@ let currentClosingData = null;
                     }
                 });
 
-                // Guardamos de forma global y explícita para asegurar el transporte de datos al guardar
+                // REPARACIÓN AQUÍ: Llenamos la variable con tus datos numéricos reales y la tasa activa
                 currentClosingData = {
                     date: hoy,
                     salesUsd: vEfectivoUsd, 
@@ -843,7 +842,7 @@ let currentClosingData = null;
                     salesMobile: vPagoMovil,
                     salesZelle: vZelle,
                     totalExpenses: totalGastosUsd,
-                    rate: parseFloat(window.exchangeRate || 1), // Capturamos tu tasa de cambio real
+                    rate: parseFloat(window.exchangeRate || 1),
                     timestamp: new Date().getTime()
                 };
 
@@ -856,6 +855,44 @@ let currentClosingData = null;
 
             } catch (e) {
                 console.error("Error crítico en initCierreCaja:", e);
+            }
+        };
+
+        // 2. TU FUNCIÓN PARA GUARDAR EL CIERRE EN FIREBASE CORREGIDA
+        window.ejecutarCierreCaja = async () => {
+            if (!closuresRef || !currentClosingData) {
+                showToast("No hay datos válidos para cerrar la caja", "error");
+                return;
+            }
+
+            try {
+                const fechaCierre = currentClosingData.date || new Date().toLocaleDateString();
+                const idDocumentoFijo = fechaCierre.replaceAll('/', '-');
+
+                // Mapeamos los datos puros para guardarlos de forma limpia en tu documento
+                const datosCierreFinal = {
+                    date: fechaCierre,
+                    salesUsd: parseFloat(currentClosingData.salesUsd || 0),
+                    salesCashBs: parseFloat(currentClosingData.salesCashBs || 0),
+                    salesMobile: parseFloat(currentClosingData.salesMobile || 0),
+                    salesZelle: parseFloat(currentClosingData.salesZelle || 0),
+                    totalExpenses: parseFloat(currentClosingData.totalExpenses || 0),
+                    rate: parseFloat(currentClosingData.rate || window.exchangeRate || 1),
+                    timestamp: currentClosingData.timestamp || new Date().getTime()
+                };
+
+                const docRefFijo = doc(closuresRef, idDocumentoFijo);
+                await setDoc(docRefFijo, datosCierreFinal);
+                
+                showToast("Cierre de Caja Guardado Exitosamente", "success");
+
+                if (typeof window.loadClosuresHistory === 'function') {
+                    window.loadClosuresHistory();
+                }
+
+            } catch (err) {
+                console.error("Error crítico al procesar el documento del cierre:", err);
+                showToast("Error al guardar el cierre", "error");
             }
         };
 // 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
