@@ -166,7 +166,12 @@
             stock.filter(p => p.quantity > 0).forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.barcode;
-                opt.textContent = `${p.name} - ${p.size}/${p.color} - $${p.price}`;
+                
+                // Obtenemos la categoría o le asignamos "General" si no tiene una
+                const categoria = p.category ? p.category.toUpperCase() : 'GENERAL';
+                
+                // Agregamos la categoría al inicio del texto de la opción
+                opt.textContent = `[${categoria}] ${p.name} - ${p.size}/${p.color} - $${p.price}`;
                 select.appendChild(opt);
             });
         }
@@ -1282,6 +1287,7 @@ window.verDetallesCierre = (base64Str) => {
                             <th class="p-5">PRENDA</th>
                             <th class="p-5">CAT.</th>
                             <th class="p-5">STOCK</th>
+                            <th class="p-5">TALLA</th>
                             <th class="p-5">DETALLE (T/C)</th>
                             <th class="p-5">PRECIO</th>
                             <th class="p-5">ACCIONES</th>
