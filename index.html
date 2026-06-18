@@ -775,68 +775,41 @@ if (!currentStore || !db) {
 let currentClosingData = null;
 
 // 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE (MODIFICADO SIN EL DESGLOSE REDUNDANTE EN LA TARJETA 1)
-window.ejecutarCierreCaja
-// 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
-       window.ejecutarCierreCaja = async () => {
+        window.ejecutarCierreCaja = async () => {
             if (!closuresRef || !currentClosingData) {
                 showToast("No hay datos válidos para cerrar la caja", "error");
                 return;
             }
 
             try {
-                // Estructuramos los datos numéricos exactos usando las importaciones globales existentes arriba en tu script
+                const fechaCierre = currentClosingData.date || new Date().toLocaleDateString();
+
+                // Creamos el ID único basado en la fecha (Ej: "17-6-2026")
+                // Reemplazamos los slashes "/" por guiones para que Firebase no se confunda
+                const idDocumentoFijo = fechaCierre.replaceAll('/', '-');
+
+                // Aseguramos la estructura con los datos exactos en números flotantes
                 const datosCierreFinal = {
-                    date: currentClosingData.date || new Date().toLocaleDateString(),
+                    date: fechaCierre,
                     salesUsd: parseFloat(currentClosingData.salesUsd || 0),
                     salesCashBs: parseFloat(currentClosingData.salesCashBs || 0),
                     salesMobile: parseFloat(currentClosingData.salesMobile || 0),
                     salesZelle: parseFloat(currentClosingData.salesZelle || 0),
-                    totalExpenses: parseFloat(currentClosingData.totalExpenses || 0), // Tus gastos integrados con éxito
+                    totalExpenses: parseFloat(currentClosingData.totalExpenses || 0), // Tus gastos guardados
                     timestamp: currentClosingData.timestamp || new Date().getTime()
                 };
 
-                // Guardamos directamente en la colección de Firebase sin alterar el flujo de la app
-                await addDoc(closuresRef, datosCierreFinal);
+                // Usamos 'doc' y 'setDoc' directamente ya que están disponibles globalmente en tu cabecera
+                const docRefFijo = doc(closuresRef, idDocumentoFijo);
+                await setDoc(docRefFijo, datosCierreFinal);
+                
                 showToast("Cierre de Caja Guardado Exitosamente", "success");
-
-                // SE ELIMINÓ TODO TIPO DE REDIRECCIÓN Y LIMPIEZA DE VARIABLES globales.
-                // El sistema guarda silenciosamente y todo se mantiene exactamente igual en la interfaz.
 
             } catch (err) {
                 console.error("Error crítico al procesar el documento del cierre:", err);
                 showToast("Error al guardar el cierre", "error");
             }
         };
-
-    // FUNCIÓN PARA REINICIAR EL CONTEO DIARIO DE VENTAS Y EGRESOS
-window.reiniciarConteoDiario = () => {
-    // Confirmación de seguridad
-    if (!confirm("¿Está seguro de que desea reiniciar el conteo de hoy? Esta acción restablecerá los valores visuales a cero.")) return;
-
-    // 1. Reseteamos el objeto de datos en memoria
-    currentClosingData = {
-        date: new Date().toLocaleDateString(),
-        salesUsd: 0,
-        salesCashBs: 0,
-        salesMobile: 0,
-        salesZelle: 0,
-        timestamp: new Date().getTime()
-    };
-
-    // 2. Forzamos los valores visuales a cero de forma inmediata
-    if (document.getElementById('close-sales-usd')) document.getElementById('close-sales-usd').innerText = `$0.00`;
-    if (document.getElementById('close-sales-cash-bs')) document.getElementById('close-sales-cash-bs').innerText = `0.00 Bs`;
-    if (document.getElementById('close-sales-mobile')) document.getElementById('close-sales-mobile').innerText = `0.00 Bs`;
-    if (document.getElementById('close-sales-zelle')) document.getElementById('close-sales-zelle').innerText = `$0.00`;
-    
-    // 3. Limpiamos visualmente el contenedor de egresos/gastos si aplica
-    const expensesContainer = document.getElementById('close-expenses-container');
-    if (expensesContainer) {
-        expensesContainer.innerHTML = '<p class="text-zinc-600 text-[10px] uppercase font-bold tracking-wider py-2">Sin gastos registrados hoy.</p>';
-    }
-
-    showToast("Conteo diario restablecido a cero", "success");
-};
 
 // 3. CARGAR EL HISTORIAL EN LA TABLA (Sin repetir días y sin mostrar montos)
    window.loadClosuresHistory = async () => {
