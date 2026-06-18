@@ -904,49 +904,41 @@ window.initCierreCaja = async () => {
 };
 // 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
         window.ejecutarCierreCaja = async () => {
-    if (!currentClosingData) return showToast("No hay datos cargados para cerrar", "error");
-    if (!closuresRef) return showToast("Error: Referencia de base de datos no lista", "error");
+            if (!closuresRef || !currentClosingData) {
+                showToast("No hay datos válidos para cerrar la caja", "error");
+                return;
+            }
 
-    try {
-        // Usamos la fecha limpia como identificador de documento único por día
-        const docId = currentClosingData.date.replace(/\//g, "-");
-        
-        // Cargamos el SDK de forma segura
-        const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-        const docSecureRef = doc(closuresRef, docId);
-        
-        // Guardamos en Firebase el cierre
-        await setDoc(docSecureRef, currentClosingData);
+            try {
+                const { addDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                
+                // Aseguramos que los valores sean numéricos exactos antes de enviarlos a Firebase
+                const datosCierreFinal = {
+                    date: currentClosingData.date || new Date().toLocaleDateString(),
+                    salesUsd: parseFloat(currentClosingData.salesUsd || 0),
+                    salesCashBs: parseFloat(currentClosingData.salesCashBs || 0),
+                    salesMobile: parseFloat(currentClosingData.salesMobile || 0),
+                    salesZelle: parseFloat(currentClosingData.salesZelle || 0),
+                    totalExpenses: parseFloat(currentClosingData.totalExpenses || 0), // Guardado de gastos exitoso
+                    timestamp: currentClosingData.timestamp || new Date().getTime()
+                };
 
-        showToast(`Cierre de caja del día ${currentClosingData.date} procesado con éxito`, "success");
-        
-        // Recargar la tabla inferior de historial antes de salir
-        window.loadClosuresHistory();
+                // Guardamos en la base de datos
+                await addDoc(closuresRef, datosCierreFinal);
+                showToast("Cierre de Caja Guardado Exitosamente", "success");
 
-        // REDIRECCIÓN FORZADA LIMPIA
-        setTimeout(() => {
-            // 1. Limpiamos las variables globales de la sucursal actual
-            currentStore = null;
-            
-            // 2. Reseteamos los campos de contraseña de las sucursales en el HTML para que queden limpios
-            const passInput1 = document.getElementById('store-pass-1');
-            const passInput2 = document.getElementById('store-pass-2');
-            if (passInput1) passInput1.value = "";
-            if (passInput2) passInput2.value = "";
-            
-            // 3. Limpiamos el texto de la sucursal activa en la barra superior si existe
-            const storeDisplay = document.getElementById('store-name-display');
-            if (storeDisplay) storeDisplay.innerText = "Seleccione Sucursal";
+                // PASO CLÍTICO: Limpiamos las variables globales de sesión para que no arrastren basura
+                currentStore = null;
+                currentClosingData = null;
 
-            // 4. Forzamos de forma directa la vista de selección de sucursales
-            window.showView('store-select');
-        }, 1000); // 1 segundo exacto de espera para que se guarde de forma síncrona
-        
-    } catch (err) {
-        console.error("Error al guardar cierre:", err);
-        showToast("Error al guardar el cierre en Firebase", "error");
-    }
-};
+                // Redirección inmediata a la selección de sucursal
+                window.showView('stores');
+
+            } catch (err) {
+                console.error("Error crítico al procesar el documento del cierre:", err);
+                showToast("Error de conexión al guardar el cierre", "error");
+            }
+        };
     // FUNCIÓN PARA REINICIAR EL CONTEO DIARIO DE VENTAS Y EGRESOS
 window.reiniciarConteoDiario = () => {
     // Confirmación de seguridad
