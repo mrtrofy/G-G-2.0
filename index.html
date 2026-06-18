@@ -497,7 +497,7 @@ if (!currentStore || !db) {
             document.getElementById('ed-name').value = p.name;
             document.getElementById('ed-category').value = p.category || ''; 
             
-            // AGREGADOS: Mapeamos el código de barras y la talla al modal sin alterar nada más
+            // ASIGNACIÓN DE LOS CAMPOS NUEVOS
             document.getElementById('ed-barcode').value = p.barcode || '';
             document.getElementById('ed-size').value = p.size || '';
 
@@ -506,29 +506,28 @@ if (!currentStore || !db) {
             document.getElementById('modal-edit').classList.add('active-modal');
         };
 
-       window.updateProduct = async () => {
+      window.updateProduct = async () => {
             const name = document.getElementById('ed-name').value;
-            const category = document.getElementById('ed-category').value;
+            const category = document.getElementById('ed-category').value; // Lee el select sin problemas
             const qty = parseInt(document.getElementById('ed-qty').value);
             const price = parseFloat(document.getElementById('ed-price').value);
 
-            // AGREGADOS: Leemos los valores correspondientes de los inputs
-            const barcode = document.getElementById('ed-barcode').value;
-            const size = document.getElementById('ed-size').value;
+            // LEEMOS LOS DOS NUEVOS VALORES DEL MODAL
+            const barcode = document.getElementById('ed-barcode').value.trim();
+            const size = document.getElementById('ed-size').value.trim();
 
             if(!name || !category || isNaN(qty) || isNaN(price)) {
                 return showToast("Por favor, llene todos los campos", "error");
             }
 
             try {
-                // Actualizamos manteniendo la misma ruta e ID exacto de tu base de datos
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`, editingProductId), {
                     name: name,
                     category: category,
                     quantity: qty,
                     price: price,
-                    barcode: barcode, // Enviamos el código de barras modificado
-                    size: size        // Enviamos la talla modificada
+                    barcode: barcode, // Guardamos el código de barras en Firebase
+                    size: size        // Guardamos la talla en Firebase
                 });
                 showToast("Stock Actualizado", "success");
                 document.getElementById('modal-edit').classList.remove('active-modal');
