@@ -917,27 +917,23 @@ window.initCierreCaja = async () => {
                     salesCashBs: parseFloat(currentClosingData.salesCashBs || 0),
                     salesMobile: parseFloat(currentClosingData.salesMobile || 0),
                     salesZelle: parseFloat(currentClosingData.salesZelle || 0),
-                    totalExpenses: parseFloat(currentClosingData.totalExpenses || 0), // Guardado de gastos exitoso
+                    totalExpenses: parseFloat(currentClosingData.totalExpenses || 0), // Guarda tus gastos exitosamente
                     timestamp: currentClosingData.timestamp || new Date().getTime()
                 };
 
-                // Guardamos directamente usando el addDoc que ya está importado arriba en tu script
+                // Guardamos directamente en tu colección de Firebase
                 await addDoc(closuresRef, datosCierreFinal);
                 showToast("Cierre de Caja Guardado Exitosamente", "success");
 
-                // Limpiamos las variables globales de sesión de la tienda activa
-                currentStore = null;
-                currentClosingData = null;
-
-                // Redirección inmediata a la selección de sucursal
-                window.showView('stores');
+                // NOTA: Se eliminó la limpieza de variables y el window.showView('stores')
+                // El sistema guarda y se queda fijo en la misma pantalla sin moverse.
 
             } catch (err) {
                 console.error("Error crítico al procesar el documento del cierre:", err);
                 showToast("Error al guardar el cierre", "error");
             }
         };
-        
+
     // FUNCIÓN PARA REINICIAR EL CONTEO DIARIO DE VENTAS Y EGRESOS
 window.reiniciarConteoDiario = () => {
     // Confirmación de seguridad
