@@ -538,7 +538,7 @@ if (!currentStore || !db) {
                 showToast("Error al actualizar", "error"); 
             }
         };
-        
+
        window.loadExpenses = async () => {
     const container = document.getElementById('expenses-container');
     if (!container) return;
@@ -1539,47 +1539,58 @@ window.reiniciarConteoDiario = () => {
         </div>
     </div>
 
-    <div id="modal-edit" class="modal">
-        <div class="glass-card p-8 rounded-[2rem] max-w-md w-full">
-            <h3 class="text-xl font-bold gold-text mb-6 uppercase">Editar Stock</h3>
-            <div class="space-y-4">
-                <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Nombre</label><input type="text" id="ed-name" class="w-full p-3 mt-1"></div>
-                <div>
-                    <label class="text-[10px] text-zinc-500 uppercase font-bold">Categoría</label>
-                    <select id="ed-category" class="w-full p-3 mt-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-xs uppercase">
-                        <option value="">-- SELECCIONE CATEGORÍA --</option>
-                        <option value="Perfumes">Perfumes</option>
-                        <option value="Zapatos">Zapatos</option>
-                        <option value="Bermudas">Bermudas</option>
-                        <option value="Pantalones">Pantalones</option>
-                        <option value="Camisetas">Camisetas</option>
-                        <option value="Franelas">Franelas</option>
-                        <option value="Gorras">Gorras</option>
-                        <option value="Cremas">Cremas</option>
-                        <option value="Splash">Splash</option>
-                        <option value="Short">Short</option>
-                        <option value="Vestidos">Vestidos</option>
-                        <option value="Zandalias">Zandalias</option>
-                        <option value="Crocs">Crocs</option>
-                        <option value="Cholas">Cholas</option>
-                        <option value="Camisas">Camisas</option>
-                        <option value="Relojs">Relojs</option>
-                        <option value="Telefonos">Telefonos</option>
-                        <option value="Sueters">Sueters</option>
-                        <option value="Gorros">Gorros</option>
-                        <option value="Conjuntos">Conjuntos</option>
-                        <option value="Otros">Otros</option>
-                    </select>
-                </div>
-                <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Stock Actual</label><input type="number" id="ed-qty" class="w-full p-3 mt-1"></div>
-                <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Precio ($)</label><input type="number" step="0.01" id="ed-price" class="w-full p-3 mt-1"></div>
+   <div id="modal-edit" class="modal">
+    <div class="glass-card p-8 rounded-[2rem] max-w-md w-full">
+        <h3 class="text-xl font-bold gold-text mb-6 uppercase">Editar Stock</h3>
+        <div class="space-y-4">
+            <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Nombre</label><input type="text" id="ed-name" class="w-full p-3 mt-1"></div>
+            <div>
+                <label class="text-[10px] text-zinc-500 uppercase font-bold">Categoría</label>
+                <select id="ed-category" class="w-full p-3 mt-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-xs uppercase">
+                    <option value="">-- SELECCIONE CATEGORÍA --</option>
+                    <option value="Perfumes">Perfumes</option>
+                    <option value="Zapatos">Zapatos</option>
+                    <option value="Bermudas">Bermudas</option>
+                    <option value="Pantalones">Pantalones</option>
+                    <option value="Camisetas">Camisetas</option>
+                    <option value="Franelas">Franelas</option>
+                    <option value="Gorras">Gorras</option>
+                    <option value="Cremas">Cremas</option>
+                    <option value="Splash">Splash</option>
+                    <option value="Short">Short</option>
+                    <option value="Vestidos">Vestidos</option>
+                    <option value="Zandalias">Zandalias</option>
+                    <option value="Crocs">Crocs</option>
+                    <option value="Cholas">Cholas</option>
+                    <option value="Camisas">Camisas</option>
+                    <option value="Relojs">Relojs</option>
+                    <option value="Telefonos">Telefonos</option>
+                    <option value="Sueters">Sueters</option>
+                    <option value="Gorros">Gorros</option>
+                    <option value="Conjuntos">Conjuntos</option>
+                    <option value="Otros">Otros</option>
+                </select>
             </div>
-            <div class="flex gap-3 mt-8">
-                <button onclick="document.getElementById('modal-edit').classList.remove('active-modal')" class="flex-1 bg-zinc-900 py-3 rounded-xl">Cerrar</button>
-                <button onclick="updateProduct()" class="flex-1 gold-gradient text-black py-3 rounded-xl font-black">ACTUALIZAR</button>
+            
+            <div>
+                <label class="text-[10px] text-zinc-500 uppercase font-bold">Código de Barras</label>
+                <input type="text" id="ed-barcode" class="w-full p-3 mt-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-xs">
             </div>
+
+            <div>
+                <label class="text-[10px] text-zinc-500 uppercase font-bold">Talla / Tamaño</label>
+                <input type="text" id="ed-size" class="w-full p-3 mt-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-xs" placeholder="Ej: M, L, Única">
+            </div>
+
+            <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Stock Actual</label><input type="number" id="ed-qty" class="w-full p-3 mt-1"></div>
+            <div><label class="text-[10px] text-zinc-500 uppercase font-bold">Precio ($)</label><input type="number" step="0.01" id="ed-price" class="w-full p-3 mt-1"></div>
+        </div>
+        <div class="flex gap-3 mt-8">
+            <button onclick="document.getElementById('modal-edit').classList.remove('active-modal')" class="flex-1 bg-zinc-900 py-3 rounded-xl">Cerrar</button>
+            <button onclick="updateProduct()" class="flex-1 gold-gradient text-black py-3 rounded-xl font-black">ACTUALIZAR</button>
         </div>
     </div>
+</div>
 
     <div id="modal-closure-details" class="modal">
     <div class="glass-card p-6 rounded-2xl w-full max-w-md border border-zinc-800 shadow-2xl relative space-y-5 animate-fade-in">
