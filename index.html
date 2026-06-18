@@ -776,7 +776,7 @@ let currentClosingData = null;
 
 // 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE
 // 1. REINICIO AUTOMÁTICO DIARIO Y SUMA FIABLE (MODIFICADO PARA INTEGRAR GASTOS DEDUCIDOS)
-window.initCierreCaja = async () => {
+       window.initCierreCaja = async () => {
     const hoy = new Date().toLocaleDateString();
     console.log("Fecha actual que buscamos:", hoy);
 
@@ -842,10 +842,10 @@ window.initCierreCaja = async () => {
         // Restamos los gastos acumulados al efectivo en dólares bruto
         const efectivoNetoUsd = vEfectivoUsd - totalGastosUsd;
 
-        // Almacenamos el objeto estructurado (puedes añadir 'gastos: totalGastosUsd' si deseas guardarlo en el cierre final)
+        // Almacenamos el objeto estructurado con las ventas netas reales deducidas
         currentClosingData = {
             date: hoy,
-            salesUsd: vEfectivoUsd,
+            salesUsd: efectivoNetoUsd, // Guardamos el Neto real deducido para el cierre definitivo
             salesCashBs: vEfectivoBs,
             salesMobile: vPagoMovil,
             salesZelle: vZelle,
