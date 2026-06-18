@@ -490,33 +490,45 @@ if (!currentStore || !db) {
             } catch (e) { showToast("Error al eliminar", "error"); }
         };
 
-        window.openEditModal = (id) => {
+       window.openEditModal = (id) => {
             const p = stock.find(item => item.id === id);
             if (!p) return;
             editingProductId = id; 
             document.getElementById('ed-name').value = p.name;
             document.getElementById('ed-category').value = p.category || ''; 
+            
+            // AGREGADOS: Mapeamos el código de barras y la talla al modal sin alterar nada más
+            document.getElementById('ed-barcode').value = p.barcode || '';
+            document.getElementById('ed-size').value = p.size || '';
+
             document.getElementById('ed-qty').value = p.quantity;
             document.getElementById('ed-price').value = p.price;
             document.getElementById('modal-edit').classList.add('active-modal');
         };
 
-        window.updateProduct = async () => {
+       window.updateProduct = async () => {
             const name = document.getElementById('ed-name').value;
             const category = document.getElementById('ed-category').value;
             const qty = parseInt(document.getElementById('ed-qty').value);
             const price = parseFloat(document.getElementById('ed-price').value);
+
+            // AGREGADOS: Leemos los valores correspondientes de los inputs
+            const barcode = document.getElementById('ed-barcode').value;
+            const size = document.getElementById('ed-size').value;
 
             if(!name || !category || isNaN(qty) || isNaN(price)) {
                 return showToast("Por favor, llene todos los campos", "error");
             }
 
             try {
+                // Actualizamos manteniendo la misma ruta e ID exacto de tu base de datos
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `${currentStore}_products`, editingProductId), {
                     name: name,
                     category: category,
                     quantity: qty,
-                    price: price
+                    price: price,
+                    barcode: barcode, // Enviamos el código de barras modificado
+                    size: size        // Enviamos la talla modificada
                 });
                 showToast("Stock Actualizado", "success");
                 document.getElementById('modal-edit').classList.remove('active-modal');
@@ -526,7 +538,7 @@ if (!currentStore || !db) {
                 showToast("Error al actualizar", "error"); 
             }
         };
-
+        
        window.loadExpenses = async () => {
     const container = document.getElementById('expenses-container');
     if (!container) return;
