@@ -312,18 +312,16 @@
         import { getFirestore, doc, setDoc, collection, query, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         // Initialize Global State
+        // --- State Management ---
         const state = {
-            currentDate: '18/6/2026',
-            ventas: {
-                efectivo_usd: 50.00,
-                efectivo_bs: 0.00,
-                pago_movil_bs: 23449.14,
-                zelle_usd: 0.00
-            },
-            gastos: [
-                { id: 'g1', descripcion: 'GASTO', monto: 50.00 }
-            ],
-            cierres: [] // Loaded dynamically from Firebase or Fallbacks
+            currentDate: '',
+            // Captura de forma automática el parámetro de la URL (?store=gg) o usa 'gg' por defecto
+            currentStore: new URLSearchParams(window.location.search).get('store') || 'gg',
+            exchangeRate: 1,
+            sales: { usd: 0, cashBs: 0, mobileBs: 0, zelle: 0 },
+            expenses: [],
+            totalExpenses: 0,
+            calculated: false
         };
 
         // --- Mock Data fallback if database configuration is absent or empty ---
