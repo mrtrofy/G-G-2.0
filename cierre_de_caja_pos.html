@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G&G Shopping - POS System - Cierre de Caja</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            bg: '#0a0a0c',
+                            card: '#121215',
+                            border: '#1d1d22',
+                            inputBg: '#17171c',
+                            gold: '#f0a218',
+                            goldHover: '#d98e10',
+                            red: '#e11d48',
+                            redHover: '#be123c',
+                            btnGray: '#151518',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom scrollbar for POS aesthetics */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #121215;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #27272a;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46;
+        }
+    </style>
+</head>
+<body class="bg-[#0a0a0c] text-zinc-100 font-sans min-h-screen flex flex-col justify-between selection:bg-brand-gold selection:text-black">
+
+    <!-- MAIN CONTAINER -->
+    <main class="w-full max-w-7xl mx-auto px-4 py-6 md:py-10 flex-grow flex flex-col justify-center">
+        
+        <!-- HEADER BAR -->
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-zinc-900 pb-5">
+            <div class="flex items-center gap-3">
+                <!-- Yellow/Orange Vertical Indicator from image_7f9863.png -->
+                <div class="w-1 h-8 bg-brand-gold rounded-full"></div>
+                <h1 class="text-lg md:text-xl font-bold tracking-wider text-white uppercase font-sans">
+                    Cierre de Caja del Día
+                </h1>
+            </div>
+            <!-- Date tag matching image_7f9863.png -->
+            <div class="bg-brand-card border border-brand-border px-4 py-1.5 rounded text-xs text-zinc-400 font-mono tracking-widest" id="current-date-badge">
+                18/6/2026
+            </div>
+        </header>
+
+        <!-- THREE PANEL GRID -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            
+            <!-- PANEL 1: RESUMEN VENTAS -->
+            <section class="bg-brand-card border border-brand-border rounded-xl p-5 md:p-6 flex flex-col justify-between transition-all hover:border-zinc-800">
+                <div>
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="w-2.5 h-2.5 rounded-full bg-brand-gold shadow-[0_0_8px_rgba(240,162,24,0.4)]"></span>
+                        <h2 class="text-xs font-bold tracking-widest text-brand-gold uppercase">
+                            Resumen Ventas
+                        </h2>
+                    </div>
+
+                    <!-- Ventas Form Inputs -->
+                    <div class="space-y-4">
+                        <!-- Efectivo USD -->
+                        <div class="flex items-center justify-between bg-brand-inputBg border border-zinc-800/80 rounded-lg p-3 focus-within:border-brand-gold/50 transition-colors">
+                            <label class="text-zinc-500 text-xs font-bold tracking-wider uppercase select-none">Efectivo ($):</label>
+                            <div class="flex items-center gap-1">
+                                <span class="text-zinc-400 font-mono font-bold">$</span>
+                                <input type="number" id="input-efectivo-usd" step="0.01" min="0" class="bg-transparent text-right text-white font-mono font-bold focus:outline-none w-32" value="50.00">
+                            </div>
+                        </div>
+
+                        <!-- Efectivo Bs -->
+                        <div class="flex items-center justify-between bg-brand-inputBg border border-zinc-800/80 rounded-lg p-3 focus-within:border-brand-gold/50 transition-colors">
+                            <label class="text-zinc-500 text-xs font-bold tracking-wider uppercase select-none">Efectivo (Bs):</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="input-efectivo-bs" step="0.01" min="0" class="bg-transparent text-right text-white font-mono font-bold focus:outline-none w-32" value="0.00">
+                                <span class="text-zinc-400 font-mono font-bold text-xs">Bs</span>
+                            </div>
+                        </div>
+
+                        <!-- Pago Movil Bs -->
+                        <div class="flex items-center justify-between bg-brand-inputBg border border-zinc-800/80 rounded-lg p-3 focus-within:border-brand-gold/50 transition-colors">
+                            <label class="text-zinc-500 text-xs font-bold tracking-wider uppercase select-none">P. Móvil (Bs):</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="input-pmovil-bs" step="0.01" min="0" class="bg-transparent text-right text-white font-mono font-bold focus:outline-none w-32" value="23449.14">
+                                <span class="text-zinc-400 font-mono font-bold text-xs">Bs</span>
+                            </div>
+                        </div>
+
+                        <!-- Zelle USD -->
+                        <div class="flex items-center justify-between bg-brand-inputBg border border-zinc-800/80 rounded-lg p-3 focus-within:border-brand-gold/50 transition-colors">
+                            <label class="text-zinc-500 text-xs font-bold tracking-wider uppercase select-none">Zelle ($):</label>
+                            <div class="flex items-center gap-1">
+                                <span class="text-zinc-400 font-mono font-bold">$</span>
+                                <input type="number" id="input-zelle-usd" step="0.01" min="0" class="bg-transparent text-right text-white font-mono font-bold focus:outline-none w-32" value="0.00">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-[10px] text-zinc-600 mt-4 italic">
+                    * Modifica los valores directamente para realizar el conteo del día.
+                </div>
+            </section>
+
+            <!-- PANEL 2: EGRESOS / GASTOS -->
+            <section class="bg-brand-card border border-brand-border rounded-xl p-5 md:p-6 flex flex-col justify-between transition-all hover:border-zinc-800">
+                <div class="flex flex-col h-full">
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="w-2.5 h-2.5 rounded-full bg-brand-red shadow-[0_0_8px_rgba(225,29,72,0.4)]"></span>
+                        <h2 class="text-xs font-bold tracking-widest text-brand-red uppercase">
+                            Egresos / Gastos
+                        </h2>
+                    </div>
+
+                    <!-- Dynamic List of Active Expenses -->
+                    <div class="flex-grow overflow-y-auto max-h-[180px] space-y-2 mb-4 pr-1" id="active-expenses-container">
+                        <!-- Expenses injected dynamically here -->
+                    </div>
+
+                    <!-- Add New Expense Block -->
+                    <div class="border-t border-zinc-900 pt-4 mt-auto">
+                        <div class="grid grid-cols-5 gap-2 mb-3">
+                            <input type="text" id="expense-desc-input" placeholder="Descripción gasto..." class="col-span-3 bg-[#17171c] border border-zinc-800/80 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-brand-red/50">
+                            <input type="number" id="expense-amount-input" step="0.01" placeholder="Monto" class="col-span-2 bg-[#17171c] border border-zinc-800/80 rounded px-2.5 py-1.5 text-xs text-white font-mono text-right focus:outline-none focus:border-brand-red/50">
+                        </div>
+                        <button onclick="addExpenseToList()" class="w-full py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded text-xs font-bold tracking-wider uppercase transition-colors flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-plus text-[10px]"></i> Añadir Gasto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Process Button in the middle panel matching image_7f9863.png -->
+                <button onclick="processCierre()" class="w-full mt-5 py-3.5 bg-brand-btnGray hover:bg-[#18181f] border border-brand-border hover:border-zinc-700 text-brand-gold hover:text-amber-400 font-mono font-bold tracking-widest text-sm uppercase rounded-lg transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-wallet"></i> Procesar Cierre
+                </button>
+            </section>
+
+            <!-- PANEL 3: HISTORIAL CIERRES (Exactly matching image_7f9863.png concept) -->
+            <section class="bg-brand-card border border-brand-border rounded-xl p-5 md:p-6 flex flex-col transition-all hover:border-zinc-800">
+                <div class="flex items-center gap-2 mb-5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-zinc-500 shadow-[0_0_8px_rgba(115,115,115,0.3)]"></span>
+                    <h2 class="text-xs font-bold tracking-widest text-zinc-400 uppercase">
+                        Historial Cierres
+                    </h2>
+                </div>
+
+                <!-- Clean, beautifully aligned Table containing Date and "Detalles" Action button -->
+                <div class="flex-grow overflow-y-auto max-h-[310px] pr-1">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-zinc-900 text-[10px] text-zinc-500 tracking-wider font-bold uppercase">
+                                <th class="pb-3 pl-1 font-semibold">Fecha</th>
+                                <th class="pb-3 text-right pr-1 font-semibold">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-zinc-900/60">
+                            <!-- Injected dynamically -->
+                            <tr>
+                                <td colspan="2" class="text-center py-10 text-zinc-600 text-xs italic">
+                                    Cargando históricos...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- BOTTOM ACTIONS BAR -->
+        <footer class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4 border-t border-zinc-900 pt-6">
+            <button onclick="showToast('Regresando al menú principal...', 'info')" class="w-full sm:w-auto px-8 py-3.5 bg-brand-btnGray hover:bg-[#18181f] border border-brand-border text-zinc-400 hover:text-white text-xs font-bold tracking-widest uppercase rounded-lg transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Regresar al Menú
+            </button>
+            <button onclick="resetInputs()" class="w-full sm:w-auto px-8 py-3.5 bg-brand-btnGray hover:bg-[#1a0f12] border border-brand-red/30 hover:border-brand-red/60 text-brand-red hover:text-rose-400 text-xs font-bold tracking-widest uppercase rounded-lg transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> Reiniciar Conteo
+            </button>
+        </footer>
+
+    </main>
+
+    <!-- DETALLES MODAL POPUP -->
+    <div id="details-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-brand-card border border-brand-border w-full max-w-3xl rounded-xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
+            
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-zinc-900 flex justify-between items-center bg-[#151518]">
+                <div class="flex items-center gap-3">
+                    <div class="w-1 h-6 bg-brand-gold rounded-full"></div>
+                    <div>
+                        <h3 class="text-sm font-black text-brand-gold tracking-widest uppercase font-mono">
+                            Desglose de Caja Registrado
+                        </h3>
+                        <p class="text-[10px] text-zinc-500 font-mono mt-0.5" id="modal-date-subtitle">Fecha: --/--/----</p>
+                    </div>
+                </div>
+                <button onclick="closeDetailsModal()" class="text-zinc-500 hover:text-white transition-colors p-1 text-sm bg-zinc-900 hover:bg-zinc-800 rounded-full w-7 h-7 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content (Two Grid Columns mirroring original POS panels) -->
+            <div class="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#0c0c0f]">
+                
+                <!-- Left: Resumen Ventas (Locked values) -->
+                <div class="bg-brand-card border border-brand-border/80 rounded-xl p-5">
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="w-2 h-2 rounded-full bg-brand-gold shadow-[0_0_6px_rgba(240,162,24,0.3)]"></span>
+                        <h4 class="text-xs font-bold tracking-wider text-brand-gold uppercase">
+                            Resumen Ventas
+                        </h4>
+                    </div>
+                    
+                    <div class="space-y-3 font-mono">
+                        <div class="flex justify-between items-center bg-[#18181d] border border-zinc-900 p-3 rounded-lg">
+                            <span class="text-[11px] text-zinc-500 font-bold">EFECTIVO ($):</span>
+                            <span class="text-sm font-bold text-white" id="modal-val-efectivo-usd">$0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-[#18181d] border border-zinc-900 p-3 rounded-lg">
+                            <span class="text-[11px] text-zinc-500 font-bold">EFECTIVO (Bs):</span>
+                            <span class="text-sm font-bold text-white" id="modal-val-efectivo-bs">0.00 Bs</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-[#18181d] border border-zinc-900 p-3 rounded-lg">
+                            <span class="text-[11px] text-zinc-500 font-bold">P. MÓVIL (Bs):</span>
+                            <span class="text-sm font-bold text-white" id="modal-val-pmovil-bs">0.00 Bs</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-[#18181d] border border-zinc-900 p-3 rounded-lg">
+                            <span class="text-[11px] text-zinc-500 font-bold">ZELLE ($):</span>
+                            <span class="text-sm font-bold text-white" id="modal-val-zelle-usd">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Egresos / Gastos (Locked list) -->
+                <div class="bg-brand-card border border-brand-border/80 rounded-xl p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="w-2 h-2 rounded-full bg-brand-red shadow-[0_0_6px_rgba(225,29,72,0.3)]"></span>
+                            <h4 class="text-xs font-bold tracking-wider text-brand-red uppercase">
+                                Egresos / Gastos
+                            </h4>
+                        </div>
+
+                        <div class="space-y-2.5 max-h-[180px] overflow-y-auto pr-1 font-mono" id="modal-expenses-container">
+                            <!-- Loaded dynamic items -->
+                        </div>
+                    </div>
+
+                    <!-- Consolidate Summary Inside Modal -->
+                    <div class="mt-5 pt-4 border-t border-zinc-900 space-y-2">
+                        <div class="flex justify-between items-center text-xs font-mono">
+                            <span class="text-zinc-500 font-bold">TOTAL GASTOS:</span>
+                            <span class="text-brand-red font-bold" id="modal-val-total-gastos">-$0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs font-mono pt-1 border-t border-zinc-900/50">
+                            <span class="text-zinc-400 font-bold">NETO ESTABLECIDO ($):</span>
+                            <span class="text-emerald-400 font-black text-sm" id="modal-val-neto-usd">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-[#151518] border-t border-zinc-900 flex justify-end">
+                <button onclick="closeDetailsModal()" class="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs font-bold tracking-widest uppercase rounded-lg transition-colors">
+                    Cerrar Vista
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS CONTAINER -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- FIREBASE AND SYSTEM SCRIPTING -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, collection, query, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        // Initialize Global State
+        const state = {
+            currentDate: '18/6/2026',
+            ventas: {
+                efectivo_usd: 50.00,
+                efectivo_bs: 0.00,
+                pago_movil_bs: 23449.14,
+                zelle_usd: 0.00
+            },
+            gastos: [
+                { id: 'g1', descripcion: 'GASTO', monto: 50.00 }
+            ],
+            cierres: [] // Loaded dynamically from Firebase or Fallbacks
+        };
+
+        // --- Mock Data fallback if database configuration is absent or empty ---
+        const mockCierres = [
+            {
+                id: "c1",
+                fecha: "17/6/2026",
+                ventas: { efectivo_usd: 120.00, efectivo_bs: 1500.00, pago_movil_bs: 18450.00, zelle_usd: 50.00 },
+                gastos: [{ descripcion: "PAGO TRANSPORTE", monto: 15.00 }, { descripcion: "ALMUERZO DE PERSONAL", monto: 20.00 }],
+                total_gastos: 35.00
+            },
+            {
+                id: "c2",
+                fecha: "16/6/2026",
+                ventas: { efectivo_usd: 80.00, efectivo_bs: 450.00, pago_movil_bs: 12900.00, zelle_usd: 100.00 },
+                gastos: [{ descripcion: "RECARGA DE AGUA", monto: 5.00 }],
+                total_gastos: 5.00
+            },
+            {
+                id: "c3",
+                fecha: "15/6/2026",
+                ventas: { efectivo_usd: 210.00, efectivo_bs: 0.00, pago_movil_bs: 34100.50, zelle_usd: 0.00 },
+                gastos: [{ descripcion: "PAPELERÍA IMPRESORA", monto: 12.50 }],
+                total_gastos: 12.50
+            }
+        ];
+
+        // --- Firebase Configuration Initialization ---
+        let db = null;
+        let auth = null;
+        let user = null;
+        let appId = 'default-app-id';
+
+        async function setupFirebase() {
+            try {
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    const app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+                    // Rule 3: Auth Before Queries
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+
+                    onAuthStateChanged(auth, (currentUser) => {
+                        user = currentUser;
+                        if (user) {
+                            listenToCierres();
+                        }
+                    });
+                } else {
+                    console.warn("No __firebase_config detected. Operating on high-fidelity offline mode.");
+                    loadMockData();
+                }
+            } catch (err) {
+                console.error("Firebase Initialization Error:", err);
+                showToast("Error de conexión a Firebase. Usando modo simulado local.", "error");
+                loadMockData();
+            }
+        }
+
+        function listenToCierres() {
+            if (!db || !user) return;
+            // Rule 1: Strict paths for public data
+            const cierresColRef = collection(db, 'artifacts', appId, 'public', 'data', 'cierres');
+            
+            // Rule 2: Simple query (no orderBy with multiple fields to avoid compound index requirement)
+            const q = query(cierresColRef);
+
+            onSnapshot(q, (snapshot) => {
+                let fetchedCierres = [];
+                snapshot.forEach((doc) => {
+                    fetchedCierres.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Merge and filter duplicate dates against mock templates
+                const merged = [...fetchedCierres];
+                mockCierres.forEach(mock => {
+                    if (!merged.some(c => c.fecha === mock.fecha)) {
+                        merged.push(mock);
+                    }
+                });
+
+                // Sort purely in memory
+                merged.sort((a, b) => {
+                    const parseDate = (dStr) => {
+                        const parts = dStr.split('/');
+                        return new Date(parts[2], parts[1] - 1, parts[0]);
+                    };
+                    return parseDate(b.fecha) - parseDate(a.fecha);
+                });
+
+                state.cierres = merged;
+                renderHistoryTable();
+            }, (error) => {
+                console.error("Firestore Listen Failure:", error);
+                showToast("Fallo al actualizar base de datos en tiempo real.", "error");
+                loadMockData();
+            });
+        }
+
+        function loadMockData() {
+            state.cierres = [...mockCierres];
+            renderHistoryTable();
+        }
+
+        // --- Render UI Modules ---
+
+        window.renderExpenses = function() {
+            const container = document.getElementById('active-expenses-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (state.gastos.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-6 text-zinc-600 text-xs italic">
+                        No hay egresos cargados hoy
+                    </div>
+                `;
+                return;
+            }
+
+            state.gastos.forEach((g) => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center bg-brand-inputBg p-3 rounded-lg border border-zinc-900 group transition-all hover:border-brand-red/30";
+                div.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <button onclick="removeExpense('${g.id}')" class="text-zinc-600 hover:text-brand-red opacity-0 group-hover:opacity-100 transition-opacity pr-1 text-xs">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                        <span class="text-xs text-zinc-400 font-mono uppercase font-bold tracking-wider">${g.descripcion}</span>
+                    </div>
+                    <span class="text-xs font-mono font-bold text-brand-red">-$${g.monto.toFixed(2)}</span>
+                `;
+                container.appendChild(div);
+            });
+        };
+
+        window.renderHistoryTable = function() {
+            const tbody = document.getElementById('history-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (state.cierres.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="2" class="text-center py-10 text-zinc-600 text-xs italic">
+                            No hay cierres históricos
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            state.cierres.forEach((cierre) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-zinc-900/30 transition-all border-b border-zinc-900/40";
+                tr.innerHTML = `
+                    <td class="py-4 pl-1 text-zinc-300 font-mono text-xs font-bold tracking-wide">${cierre.fecha}</td>
+                    <td class="py-4 text-right pr-1">
+                        <button onclick="openDetails('${cierre.id}')" class="px-5 py-1.5 bg-brand-btnGray hover:bg-zinc-800 text-zinc-300 hover:text-white text-[10px] font-bold tracking-widest uppercase rounded border border-zinc-800 hover:border-zinc-700 transition-all active:scale-95">
+                            Detalles
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        // --- Core User Workflows ---
+
+        window.addExpenseToList = function() {
+            const descInput = document.getElementById('expense-desc-input');
+            const amountInput = document.getElementById('expense-amount-input');
+            
+            const desc = descInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+
+            if (!desc || isNaN(amount) || amount <= 0) {
+                showToast("Por favor, ingresa una descripción y un monto de gasto válido", "warning");
+                return;
+            }
+
+            state.gastos.push({
+                id: crypto.randomUUID(),
+                descripcion: desc,
+                monto: amount
+            });
+
+            descInput.value = '';
+            amountInput.value = '';
+            renderExpenses();
+            showToast("Gasto añadido con éxito", "success");
+        };
+
+        window.removeExpense = function(id) {
+            state.gastos = state.gastos.filter(g => g.id !== id);
+            renderExpenses();
+            showToast("Gasto removido del conteo", "info");
+        };
+
+        window.processCierre = async function() {
+            // Read active input values
+            const eUsd = parseFloat(document.getElementById('input-efectivo-usd').value) || 0;
+            const eBs = parseFloat(document.getElementById('input-efectivo-bs').value) || 0;
+            const pmBs = parseFloat(document.getElementById('input-pmovil-bs').value) || 0;
+            const zUsd = parseFloat(document.getElementById('input-zelle-usd').value) || 0;
+
+            const totalGastos = state.gastos.reduce((sum, g) => sum + g.monto, 0);
+
+            const newCierre = {
+                id: "cierre_" + Date.now(),
+                fecha: state.currentDate,
+                ventas: {
+                    efectivo_usd: eUsd,
+                    efectivo_bs: eBs,
+                    pago_movil_bs: pmBs,
+                    zelle_usd: zUsd
+                },
+                gastos: [...state.gastos],
+                total_gastos: totalGastos,
+                created_at: new Date().toISOString()
+            };
+
+            // Save in database if available, otherwise append offline
+            if (db && user) {
+                try {
+                    // Rule 1: Strict collection paths
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'cierres', newCierre.id);
+                    await setDoc(docRef, newCierre);
+                    showToast("Cierre procesado y guardado en la nube con éxito", "success");
+                } catch (err) {
+                    console.error("Firestore Save Error:", err);
+                    showToast("Error al guardar en la nube. Guardando localmente.", "error");
+                    saveLocalFallback(newCierre);
+                }
+            } else {
+                saveLocalFallback(newCierre);
+                showToast("Cierre procesado y guardado localmente", "success");
+            }
+        };
+
+        function saveLocalFallback(newCierre) {
+            // Check if date already exists in state and replace, otherwise add
+            const existingIndex = state.cierres.findIndex(c => c.fecha === newCierre.fecha);
+            if (existingIndex > -1) {
+                state.cierres[existingIndex] = newCierre;
+            } else {
+                state.cierres.unshift(newCierre);
+            }
+            renderHistoryTable();
+        }
+
+        window.openDetails = function(cierreId) {
+            const cierre = state.cierres.find(c => c.id === cierreId);
+            if (!cierre) return;
+
+            document.getElementById('modal-date-subtitle').innerText = `Fecha del Cierre: ${cierre.fecha}`;
+            
+            // Populating Sales Values
+            document.getElementById('modal-val-efectivo-usd').innerText = `$${(cierre.ventas?.efectivo_usd || 0).toFixed(2)}`;
+            document.getElementById('modal-val-efectivo-bs').innerText = `${(cierre.ventas?.efectivo_bs || 0).toFixed(2)} Bs`;
+            document.getElementById('modal-val-pmovil-bs').innerText = `${(cierre.ventas?.pago_movil_bs || 0).toFixed(2)} Bs`;
+            document.getElementById('modal-val-zelle-usd').innerText = `$${(cierre.ventas?.zelle_usd || 0).toFixed(2)}`;
+
+            // Populating Expense Sub-list
+            const expensesContainer = document.getElementById('modal-expenses-container');
+            expensesContainer.innerHTML = '';
+
+            const expenses = cierre.gastos || [];
+            if (expenses.length === 0) {
+                expensesContainer.innerHTML = `
+                    <div class="text-center py-6 text-zinc-600 text-xs italic">
+                        No se registraron egresos
+                    </div>
+                `;
+            } else {
+                expenses.forEach(g => {
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center bg-[#18181d] border border-zinc-900 p-2.5 rounded-lg";
+                    row.innerHTML = `
+                        <span class="text-[11px] text-zinc-400 uppercase font-bold tracking-wider">${g.descripcion}</span>
+                        <span class="text-xs font-bold text-brand-red">-$${g.monto.toFixed(2)}</span>
+                    `;
+                    expensesContainer.appendChild(row);
+                });
+            }
+
+            // Calculations
+            const totalG = cierre.total_gastos || 0;
+            document.getElementById('modal-val-total-gastos').innerText = `-$${totalG.toFixed(2)}`;
+
+            // Consolidated USD conversion rate (simulated standard POS rate 40 Bs/$)
+            const bsRate = 40.0;
+            const usdTotalVentas = (cierre.ventas?.efectivo_usd || 0) + (cierre.ventas?.zelle_usd || 0) + (((cierre.ventas?.efectivo_bs || 0) + (cierre.ventas?.pago_movil_bs || 0)) / bsRate);
+            const netoUSD = usdTotalVentas - totalG;
+
+            document.getElementById('modal-val-neto-usd').innerText = `$${netoUSD.toFixed(2)}`;
+
+            // Show Modal with clean transition
+            const modal = document.getElementById('details-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.firstElementChild.classList.remove('scale-95');
+                modal.firstElementChild.classList.add('scale-100');
+            }, 50);
+        };
+
+        window.closeDetailsModal = function() {
+            const modal = document.getElementById('details-modal');
+            modal.firstElementChild.classList.remove('scale-100');
+            modal.firstElementChild.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 150);
+        };
+
+        window.resetInputs = function() {
+            document.getElementById('input-efectivo-usd').value = "0.00";
+            document.getElementById('input-efectivo-bs').value = "0.00";
+            document.getElementById('input-pmovil-bs').value = "0.00";
+            document.getElementById('input-zelle-usd').value = "0.00";
+            
+            state.gastos = [];
+            renderExpenses();
+            showToast("Valores de conteo reiniciados", "info");
+        };
+
+        // --- Elegant Toast Notifications ---
+        window.showToast = function(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const colors = {
+                success: 'border-emerald-500/30 bg-[#0e1612] text-emerald-400',
+                error: 'border-brand-red/30 bg-[#160e10] text-brand-red',
+                warning: 'border-amber-500/30 bg-[#16130e] text-amber-400',
+                info: 'border-zinc-800 bg-brand-card text-zinc-300'
+            };
+
+            const icons = {
+                success: '<i class="fa-solid fa-circle-check"></i>',
+                error: '<i class="fa-solid fa-circle-xmark"></i>',
+                warning: '<i class="fa-solid fa-triangle-exclamation"></i>',
+                info: '<i class="fa-solid fa-circle-info"></i>'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-3 px-4 py-3 border.5 rounded-lg shadow-xl text-xs font-semibold tracking-wide uppercase font-mono transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto border ${colors[type]}`;
+            toast.innerHTML = `${icons[type]} <span>${message}</span>`;
+            
+            container.appendChild(toast);
+
+            // Animate In
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            // Animate Out
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 4000);
+        };
+
+        // --- Start Up Executions ---
+        window.onload = function() {
+            // Apply Dynamic Date Badge
+            const today = new Date();
+            const dateStr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
+            state.currentDate = dateStr;
+            const badge = document.getElementById('current-date-badge');
+            if (badge) badge.innerText = dateStr;
+
+            setupFirebase();
+            renderExpenses();
+        };
+
+    </script>
+</body>
+</html>
