@@ -856,21 +856,22 @@ let currentClosingData = null;
             } catch (e) {
                 console.error("Error crítico en initCierreCaja:", e);
             }
-        };
-
-        // 2. TU FUNCIÓN PARA GUARDAR EL CIERRE EN FIREBASE CORREGIDA
-        window.ejecutarCierreCaja = async () => {
+        };    
+// 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
+      window.ejecutarCierreCaja = async () => {
+            // 1. Validamos de forma segura antes de desestructurar para evitar que la consola explote
             if (!closuresRef || !currentClosingData) {
-                showToast("No hay datos válidos para cerrar la caja", "error");
+                showToast("No hay datos cargados para realizar el cierre hoy", "error");
                 return;
             }
 
             try {
+                // 2. Extraemos los datos asegurando valores por defecto si alguno viene vacío
                 const fechaCierre = currentClosingData.date || new Date().toLocaleDateString();
                 const idDocumentoFijo = fechaCierre.replaceAll('/', '-');
 
-                // Mapeamos los datos puros para guardarlos de forma limpia en tu documento
-                const datosCierreFinal = {
+                // 3. Mapeamos tu objeto con datos limpios y numéricos reales
+                const datosGuardar = {
                     date: fechaCierre,
                     salesUsd: parseFloat(currentClosingData.salesUsd || 0),
                     salesCashBs: parseFloat(currentClosingData.salesCashBs || 0),
@@ -881,55 +882,19 @@ let currentClosingData = null;
                     timestamp: currentClosingData.timestamp || new Date().getTime()
                 };
 
+                // 4. Guardamos en Firebase usando tus referencias
                 const docRefFijo = doc(closuresRef, idDocumentoFijo);
-                await setDoc(docRefFijo, datosCierreFinal);
+                await setDoc(docRefFijo, datosGuardar);
                 
                 showToast("Cierre de Caja Guardado Exitosamente", "success");
 
+                // Ejecutamos tu función de refrescar historial si existe
                 if (typeof window.loadClosuresHistory === 'function') {
                     window.loadClosuresHistory();
                 }
 
             } catch (err) {
-                console.error("Error crítico al procesar el documento del cierre:", err);
-                showToast("Error al guardar el cierre", "error");
-            }
-        };
-// 2. GUARDAR EN FIREBASE EVITANDO DUPLICADOS (Usamos la fecha como ID único de documento)
-      window.ejecutarCierreCaja = async () => {
-            // Validamos que existan la referencia de la colección y los datos cargados en pantalla
-            if (!closuresRef || !currentClosingData) {
-                showToast("No hay datos cargados para realizar el cierre hoy", "error");
-                return;
-            }
-
-            try {
-                const fechaCierre = currentClosingData.date || new Date().toLocaleDateString();
-                const idDocumentoFijo = fechaCierre.replaceAll('/', '-');
-
-                const datosCierreFinal = {
-                    date: fechaCierre,
-                    salesUsd: parseFloat(currentClosingData.salesUsd || 0),
-                    salesCashBs: parseFloat(currentClosingData.salesCashBs || 0),
-                    salesMobile: parseFloat(currentClosingData.salesMobile || 0),
-                    salesZelle: parseFloat(currentClosingData.salesZelle || 0),
-                    totalExpenses: parseFloat(currentClosingData.totalExpenses || 0),
-                    rate: parseFloat(currentClosingData.rate || window.exchangeRate || 1), // Persistencia de la tasa
-                    timestamp: currentClosingData.timestamp || new Date().getTime()
-                };
-
-                // Guardamos directamente en la colección de cierres de la tienda activa
-                const docRefFijo = doc(closuresRef, idDocumentoFijo);
-                await setDoc(docRefFijo, datosCierreFinal);
-                
-                showToast("Cierre de Caja Guardado Exitosamente", "success");
-
-                if (typeof window.loadClosuresHistory === 'function') {
-                    window.loadClosuresHistory();
-                }
-
-            } catch (err) {
-                console.error("Error crítico al procesar el documento del cierre:", err);
+                console.error("Error crítico dentro de ejecutarCierreCaja:", err);
                 showToast("Error al guardar el cierre", "error");
             }
         };
