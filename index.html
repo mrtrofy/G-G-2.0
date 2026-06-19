@@ -91,6 +91,7 @@
         let productsRef, salesRef, incidentsRef, expensesRef, closuresRef;
         let editingProductId = null;
         let pendingAction = null;
+        let currentClosingData = null; // <- AÑADE ESTA LÍNEA AQUÍ
 
         const PASS_STORE1 = "Vision&Resultados.2026";
         const PASS_STORE2 = "Estrategia*Valor+Diciplina";
@@ -713,6 +714,17 @@ if (!currentStore || !db) {
 
                 window.calculateCierreDifferenceFromZero();
 
+                currentClosingData = {
+            date: hoy,
+            salesUsd: parseFloat(ventasEfectivo), // Tu variable de efectivo combinada
+            salesCashBs: 0, 
+            salesMobile: parseFloat(ventasPagoMovil), // Tu variable de pago móvil
+            salesZelle: 0,
+            totalExpenses: parseFloat(totalGastos),
+            rate: 1,
+            timestamp: new Date().getTime()
+        };
+
             } catch (error) {
                 console.error("Error al calcular la jornada diaria:", error);
             }
@@ -780,10 +792,6 @@ if (!currentStore || !db) {
                 select.value = "";
             }
         };
-
-        // Variable temporal para guardar el cálculo consolidado del día actual antes de subirlo
-let currentClosingData = null;
-
     // 1. TU FUNCIÓN PARA INICIALIZAR EL CIERRE CORREGIDA
         window.initCierreCaja = async () => {
             const hoy = new Date().toLocaleDateString();
