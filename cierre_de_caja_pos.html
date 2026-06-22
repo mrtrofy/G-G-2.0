@@ -146,7 +146,7 @@
         </div>
       </div>
 
-      <!-- EGRESOS / GASTOS (Como el diseño de la imagen) -->
+      <!-- EGRESOS / GASTOS -->
       <div class="card-dark rounded-2xl p-6">
         <h2 class="text-sm font-bold tracking-wider text-rose-500 mb-4 flex items-center uppercase">
           <span class="w-2.5 h-2.5 bg-[#f43f5e] rounded-full inline-block mr-2"></span>
@@ -193,7 +193,7 @@
         </div>
       </div>
 
-      <!-- BOTÓN DE PROCESAR CIERRE (Estilo oro con degradado) -->
+      <!-- BOTÓN DE PROCESAR CIERRE -->
       <div class="pt-2">
         <button onclick="saveCierreToFirebase()" id="procesar-cierre-btn" class="w-full py-4 bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-extrabold text-sm rounded-2xl tracking-widest transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-amber-500/20 uppercase flex items-center justify-center space-x-2">
           <i data-lucide="archive" class="w-5 h-5"></i>
@@ -339,8 +339,8 @@
     import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, addDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Credenciales de Firebase proporcionadas por el usuario
-    const firebaseConfig = {
+    // Configuración por defecto usando tus credenciales de producción
+    const defaultFirebaseConfig = {
       apiKey: "AIzaSyD1sJKaLw4ba41SPTMy1ZoPQCSHynuzLrA",
       authDomain: "gyg-2-0.firebaseapp.com",
       databaseURL: "https://gyg-2-0-default-rtdb.firebaseio.com",
@@ -350,6 +350,9 @@
       appId: "1:248474716571:web:b6a2bfa565c3125d08393e",
       measurementId: "G-DPBHL3P6D7"
     };
+
+    // Detecta dinámicamente si el entorno inyecta otra configuración de base de datos
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultFirebaseConfig;
 
     // Inicializando Firebase
     const app = initializeApp(firebaseConfig);
@@ -362,7 +365,7 @@
     let localGastos = [];
     let cierresList = [];
 
-    // Inicializar autenticación de forma segura antes de cualquier query (Regla 3 de Firebase)
+    // Inicializar autenticación de forma segura (Cumpliendo la regla 3 de Firebase)
     const initAuth = async () => {
       try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -375,11 +378,11 @@
       }
     };
 
-    // Escuchar el estado de autenticación de forma en tiempo real
+    // Escuchar el estado de autenticación en tiempo real
     onAuthStateChanged(auth, (loggedUser) => {
       user = loggedUser;
       if (user) {
-        // Ejecutar lectura una vez autenticado
+        // Ejecutar lectura únicamente una vez autenticado
         listenToCierres();
       } else {
         showToast("Esperando autenticación...", false);
@@ -389,7 +392,7 @@
     // Arrancar la autenticación inmediatamente
     initAuth();
 
-    // Escuchar cambios en los cierres de caja en tiempo real (Ruta estricta Regla 1 y 2)
+    // Escuchar cambios en tiempo real (Regla de rutas estrictas y ordenamiento seguro)
     function listenToCierres() {
       if (!user) return;
       
@@ -401,7 +404,7 @@
           cierresList.push({ id: doc.id, ...doc.data() });
         });
         
-        // Ordenar localmente para evitar la necesidad de configurar índices compuestos manuales
+        // Ordenamiento local y seguro en memoria para evitar requerir índices compuestos manuales
         cierresList.sort((a, b) => new Date(b.creadoEn) - new Date(a.creadoEn));
         
         renderHistorial();
