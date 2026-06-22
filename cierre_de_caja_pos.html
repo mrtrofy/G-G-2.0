@@ -1,714 +1,731 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>G&G Shopping - POS System - Cierre de Caja</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    colors: {
-                        brand: {
-                            bg: '#0a0a0c',
-                            card: '#121215',
-                            border: '#1d1d22',
-                            inputBg: '#17171c',
-                            gold: '#f0a218',
-                            goldHover: '#d98e10',
-                            red: '#e11d48',
-                            redHover: '#be123c',
-                            btnGray: '#151518',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-
-    <style>
-        /* Custom scrollbar for POS aesthetics */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #121215;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #27272a;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #3f3f46;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cierre de Caja - Control Diario</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts (Inter) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons for premium visual depth -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #121214;
+      color: #e4e4e7;
+    }
+    .card-dark {
+      background-color: #1a1a1e;
+      border: 1px solid #2d2d34;
+    }
+    .input-dark {
+      background-color: #242429;
+      border: 1px solid #2d2d34;
+      color: #ffffff;
+    }
+    .input-dark:focus {
+      border-color: #f59e0b;
+      outline: none;
+    }
+    /* Custom scrollbar for beautiful dark UI */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #121214;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2d2d34;
+      border-radius: 3px;
+    }
+  </style>
 </head>
-<body class="bg-[#0a0a0c] text-zinc-100 font-sans min-h-screen flex flex-col justify-between selection:bg-brand-gold selection:text-black">
+<body class="min-h-screen flex flex-col pb-12">
 
-    <!-- MAIN CONTAINER -->
-    <main class="w-full max-w-7xl mx-auto px-4 py-6 md:py-10 flex-grow flex flex-col justify-center">
-        
-        <!-- HEADER BAR -->
-        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-zinc-900 pb-5">
-            <div class="flex items-center gap-3">
-                <!-- Yellow/Orange Vertical Indicator from image_7f9863.png -->
-                <div class="w-1 h-8 bg-brand-gold rounded-full"></div>
-                <h1 class="text-lg md:text-xl font-bold tracking-wider text-white uppercase font-sans">
-                    Cierre de Caja del Día
-                </h1>
-            </div>
-            <!-- Date tag matching image_7f9863.png -->
-            <div class="bg-brand-card border border-brand-border px-4 py-1.5 rounded text-xs text-zinc-400 font-mono tracking-widest" id="current-date-badge">
-                18/6/2026
-            </div>
-        </header>
-
-        <!-- THREE PANEL GRID -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            
-            <!-- PANEL 1: RESUMEN VENTAS -->
-            <section class="bg-brand-card border border-brand-border rounded-xl p-5 md:p-6 flex flex-col justify-between transition-all hover:border-zinc-800">
-                <div>
-                    <div class="flex items-center gap-2 mb-6">
-                        <span class="w-2.5 h-2.5 rounded-full bg-brand-gold shadow-[0_0_8px_rgba(240,162,24,0.4)]"></span>
-                        <h2 class="text-xs font-bold tracking-widest text-brand-gold uppercase">
-                            Resumen Ventas
-                        </h2>
-                    </div>
-
-                    <!-- Ventas Form Inputs -->
-                    <div class="space-y-4">
-                        <!-- Efectivo USD -->
-                        <div class="flex items-center justify-between bg-brand-inputBg border border-zinc-800/80 rounded-lg p-3 focus-within:border-brand-gold/50 transition-colors">
-                            <label class="text-zinc-500 text-xs font-bold tracking-wider uppercase select-none">Efectivo ($):</label>
-                            <div class="flex items-center gap-1">
-                                <span class="text-zinc-400 font-mono font-bold">$</span>
-                                <input type="number" id="input-efectivo-usd" step="0.01" min="0" class="bg-transparent text-right text-white font-mono font-bold focus:outline-none w-32" value="50.00">
-                            </div>
-                        </div>
-
-                        <!-- Efectivo Bs -->
-                        <div class="flex items-center justify-between bg-brand-inputBg border border-zinc-800/80 rounded-lg p-3 focus-within:border-brand-gold/50 transition-colors">
-                            <label class="text-zinc-500 text-xs font-bold tracking-wider uppercase select-none">Efectivo (Bs):</label>
-                            <div class="flex items-center gap-2">
-                                <input type="number" id="input-efectivo-bs" step="0.01" min="0" class="bg-transparent text-right text-white font-mono font-bold focus:outline-none w-32" value="0.00">
-                                <span class="text-zinc-400 font-mono font-bold text-xs">Bs</span>
-                            </div>
-                        </div>
-
-                        <!-- Pago Movil Bs -->
-                        <div class="flex items-center justify-between bg-brand-inputBg border border-zinc-800/80 rounded-lg p-3 focus-within:border-brand-gold/50 transition-colors">
-                            <label class="text-zinc-500 text-xs font-bold tracking-wider uppercase select-none">P. Móvil (Bs):</label>
-                            <div class="flex items-center gap-2">
-                                <input type="number" id="input-pmovil-bs" step="0.01" min="0" class="bg-transparent text-right text-white font-mono font-bold focus:outline-none w-32" value="23449.14">
-                                <span class="text-zinc-400 font-mono font-bold text-xs">Bs</span>
-                            </div>
-                        </div>
-
-                        <!-- Zelle USD -->
-                        <div class="flex items-center justify-between bg-brand-inputBg border border-zinc-800/80 rounded-lg p-3 focus-within:border-brand-gold/50 transition-colors">
-                            <label class="text-zinc-500 text-xs font-bold tracking-wider uppercase select-none">Zelle ($):</label>
-                            <div class="flex items-center gap-1">
-                                <span class="text-zinc-400 font-mono font-bold">$</span>
-                                <input type="number" id="input-zelle-usd" step="0.01" min="0" class="bg-transparent text-right text-white font-mono font-bold focus:outline-none w-32" value="0.00">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="text-[10px] text-zinc-600 mt-4 italic">
-                    * Modifica los valores directamente para realizar el conteo del día.
-                </div>
-            </section>
-
-            <!-- PANEL 2: EGRESOS / GASTOS -->
-            <section class="bg-brand-card border border-brand-border rounded-xl p-5 md:p-6 flex flex-col justify-between transition-all hover:border-zinc-800">
-                <div class="flex flex-col h-full">
-                    <div class="flex items-center gap-2 mb-6">
-                        <span class="w-2.5 h-2.5 rounded-full bg-brand-red shadow-[0_0_8px_rgba(225,29,72,0.4)]"></span>
-                        <h2 class="text-xs font-bold tracking-widest text-brand-red uppercase">
-                            Egresos / Gastos
-                        </h2>
-                    </div>
-
-                    <!-- Dynamic List of Active Expenses -->
-                    <div class="flex-grow overflow-y-auto max-h-[180px] space-y-2 mb-4 pr-1" id="active-expenses-container">
-                        <!-- Expenses injected dynamically here -->
-                    </div>
-
-                    <!-- Add New Expense Block -->
-                    <div class="border-t border-zinc-900 pt-4 mt-auto">
-                        <div class="grid grid-cols-5 gap-2 mb-3">
-                            <input type="text" id="expense-desc-input" placeholder="Descripción gasto..." class="col-span-3 bg-[#17171c] border border-zinc-800/80 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-brand-red/50">
-                            <input type="number" id="expense-amount-input" step="0.01" placeholder="Monto" class="col-span-2 bg-[#17171c] border border-zinc-800/80 rounded px-2.5 py-1.5 text-xs text-white font-mono text-right focus:outline-none focus:border-brand-red/50">
-                        </div>
-                        <button onclick="addExpenseToList()" class="w-full py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded text-xs font-bold tracking-wider uppercase transition-colors flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-plus text-[10px]"></i> Añadir Gasto
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Process Button in the middle panel matching image_7f9863.png -->
-                <button onclick="processCierre()" class="w-full mt-5 py-3.5 bg-brand-btnGray hover:bg-[#18181f] border border-brand-border hover:border-zinc-700 text-brand-gold hover:text-amber-400 font-mono font-bold tracking-widest text-sm uppercase rounded-lg transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-wallet"></i> Procesar Cierre
-                </button>
-            </section>
-
-            <!-- PANEL 3: HISTORIAL CIERRES (Exactly matching image_7f9863.png concept) -->
-            <section class="bg-brand-card border border-brand-border rounded-xl p-5 md:p-6 flex flex-col transition-all hover:border-zinc-800">
-                <div class="flex items-center gap-2 mb-5">
-                    <span class="w-2.5 h-2.5 rounded-full bg-zinc-500 shadow-[0_0_8px_rgba(115,115,115,0.3)]"></span>
-                    <h2 class="text-xs font-bold tracking-widest text-zinc-400 uppercase">
-                        Historial Cierres
-                    </h2>
-                </div>
-
-                <!-- Clean, beautifully aligned Table containing Date and "Detalles" Action button -->
-                <div class="flex-grow overflow-y-auto max-h-[310px] pr-1">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="border-b border-zinc-900 text-[10px] text-zinc-500 tracking-wider font-bold uppercase">
-                                <th class="pb-3 pl-1 font-semibold">Fecha</th>
-                                <th class="pb-3 text-right pr-1 font-semibold">Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-table-body" class="divide-y divide-zinc-900/60">
-                            <!-- Injected dynamically -->
-                            <tr>
-                                <td colspan="2" class="text-center py-10 text-zinc-600 text-xs italic">
-                                    Cargando históricos...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
+  <!-- Header / Navigation -->
+  <header class="border-b border-[#2d2d34] bg-[#1a1a1e] py-4 px-6 sticky top-0 z-40">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-amber-500 text-black p-2 rounded-lg font-bold">
+          <i data-lucide="wallet" class="w-5 h-5"></i>
         </div>
-
-        <!-- BOTTOM ACTIONS BAR -->
-        <footer class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4 border-t border-zinc-900 pt-6">
-            <button onclick="showToast('Regresando al menú principal...', 'info')" class="w-full sm:w-auto px-8 py-3.5 bg-brand-btnGray hover:bg-[#18181f] border border-brand-border text-zinc-400 hover:text-white text-xs font-bold tracking-widest uppercase rounded-lg transition-all flex items-center justify-center gap-2">
-                <i class="fa-solid fa-arrow-left"></i> Regresar al Menú
-            </button>
-            <button onclick="resetInputs()" class="w-full sm:w-auto px-8 py-3.5 bg-brand-btnGray hover:bg-[#1a0f12] border border-brand-red/30 hover:border-brand-red/60 text-brand-red hover:text-rose-400 text-xs font-bold tracking-widest uppercase rounded-lg transition-all flex items-center justify-center gap-2">
-                <i class="fa-solid fa-rotate-right"></i> Reiniciar Conteo
-            </button>
-        </footer>
-
-    </main>
-
-    <!-- DETALLES MODAL POPUP -->
-    <div id="details-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-sm transition-opacity duration-300">
-        <div class="bg-brand-card border border-brand-border w-full max-w-3xl rounded-xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
-            
-            <!-- Modal Header -->
-            <div class="px-6 py-4 border-b border-zinc-900 flex justify-between items-center bg-[#151518]">
-                <div class="flex items-center gap-3">
-                    <div class="w-1 h-6 bg-brand-gold rounded-full"></div>
-                    <div>
-                        <h3 class="text-sm font-black text-brand-gold tracking-widest uppercase font-mono">
-                            Desglose de Caja Registrado
-                        </h3>
-                        <p class="text-[10px] text-zinc-500 font-mono mt-0.5" id="modal-date-subtitle">Fecha: --/--/----</p>
-                    </div>
-                </div>
-                <button onclick="closeDetailsModal()" class="text-zinc-500 hover:text-white transition-colors p-1 text-sm bg-zinc-900 hover:bg-zinc-800 rounded-full w-7 h-7 flex items-center justify-center">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <!-- Modal Content (Two Grid Columns mirroring original POS panels) -->
-            <div class="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#0c0c0f]">
-                
-                <!-- Left: Resumen Ventas (Locked values) -->
-                <div class="bg-brand-card border border-brand-border/80 rounded-xl p-5">
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="w-2 h-2 rounded-full bg-brand-gold shadow-[0_0_6px_rgba(240,162,24,0.3)]"></span>
-                        <h4 class="text-xs font-bold tracking-wider text-brand-gold uppercase">
-                            Resumen Ventas
-                        </h4>
-                    </div>
-                    
-                    <div class="space-y-3 font-mono">
-                        <div class="flex justify-between items-center bg-[#18181d] border border-zinc-900 p-3 rounded-lg">
-                            <span class="text-[11px] text-zinc-500 font-bold">EFECTIVO ($):</span>
-                            <span class="text-sm font-bold text-white" id="modal-val-efectivo-usd">$0.00</span>
-                        </div>
-                        <div class="flex justify-between items-center bg-[#18181d] border border-zinc-900 p-3 rounded-lg">
-                            <span class="text-[11px] text-zinc-500 font-bold">EFECTIVO (Bs):</span>
-                            <span class="text-sm font-bold text-white" id="modal-val-efectivo-bs">0.00 Bs</span>
-                        </div>
-                        <div class="flex justify-between items-center bg-[#18181d] border border-zinc-900 p-3 rounded-lg">
-                            <span class="text-[11px] text-zinc-500 font-bold">P. MÓVIL (Bs):</span>
-                            <span class="text-sm font-bold text-white" id="modal-val-pmovil-bs">0.00 Bs</span>
-                        </div>
-                        <div class="flex justify-between items-center bg-[#18181d] border border-zinc-900 p-3 rounded-lg">
-                            <span class="text-[11px] text-zinc-500 font-bold">ZELLE ($):</span>
-                            <span class="text-sm font-bold text-white" id="modal-val-zelle-usd">$0.00</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right: Egresos / Gastos (Locked list) -->
-                <div class="bg-brand-card border border-brand-border/80 rounded-xl p-5 flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center gap-2 mb-4">
-                            <span class="w-2 h-2 rounded-full bg-brand-red shadow-[0_0_6px_rgba(225,29,72,0.3)]"></span>
-                            <h4 class="text-xs font-bold tracking-wider text-brand-red uppercase">
-                                Egresos / Gastos
-                            </h4>
-                        </div>
-
-                        <div class="space-y-2.5 max-h-[180px] overflow-y-auto pr-1 font-mono" id="modal-expenses-container">
-                            <!-- Loaded dynamic items -->
-                        </div>
-                    </div>
-
-                    <!-- Consolidate Summary Inside Modal -->
-                    <div class="mt-5 pt-4 border-t border-zinc-900 space-y-2">
-                        <div class="flex justify-between items-center text-xs font-mono">
-                            <span class="text-zinc-500 font-bold">TOTAL GASTOS:</span>
-                            <span class="text-brand-red font-bold" id="modal-val-total-gastos">-$0.00</span>
-                        </div>
-                        <div class="flex justify-between items-center text-xs font-mono pt-1 border-t border-zinc-900/50">
-                            <span class="text-zinc-400 font-bold">NETO ESTABLECIDO ($):</span>
-                            <span class="text-emerald-400 font-black text-sm" id="modal-val-neto-usd">$0.00</span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Modal Footer -->
-            <div class="px-6 py-4 bg-[#151518] border-t border-zinc-900 flex justify-end">
-                <button onclick="closeDetailsModal()" class="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs font-bold tracking-widest uppercase rounded-lg transition-colors">
-                    Cerrar Vista
-                </button>
-            </div>
-
+        <div>
+          <h1 class="text-lg font-semibold tracking-wide">CAJA CONTROL</h1>
+          <p class="text-xs text-gray-400">Gestión de Cierres Diarios</p>
         </div>
+      </div>
+      
+      <!-- SPA Tab Navigation (Simulating index.html redirects) -->
+      <div class="flex space-x-2">
+        <button id="tab-cierre-btn" onclick="switchTab('cierre')" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-amber-500 text-black shadow-md">
+          Nuevo Cierre
+        </button>
+        <button id="tab-historial-btn" onclick="switchTab('historial')" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-300 hover:bg-[#242429]">
+          Historial
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-grow max-w-4xl w-full mx-auto px-4 mt-6">
+    
+    <!-- Status / Notification Toast -->
+    <div id="toast" class="hidden fixed bottom-5 right-5 z-50 flex items-center p-4 space-x-3 bg-zinc-900 border border-amber-500/50 rounded-xl shadow-2xl transition-all duration-300 max-w-md">
+      <div class="text-amber-500" id="toast-icon">
+        <i data-lucide="info" class="w-5 h-5"></i>
+      </div>
+      <div class="text-sm font-medium text-white" id="toast-message">Mensaje de notificación</div>
     </div>
 
-    <!-- TOAST NOTIFICATIONS CONTAINER -->
-    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+    <!-- TASA DEL DÍA FLOATING CARD -->
+    <div class="card-dark rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="bg-amber-500/10 text-amber-500 p-2 rounded-lg">
+          <i data-lucide="trending-up" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="font-semibold text-sm">Tasa de Cambio Oficial (VES/USD)</h3>
+          <p class="text-xs text-gray-400">Utilizada para consolidar montos mixtos automáticamente</p>
+        </div>
+      </div>
+      <div class="relative w-full sm:w-44">
+        <span class="absolute left-3 top-2.5 text-xs text-gray-500 font-bold">Bs.</span>
+        <input type="number" id="tasa-dia" value="40.00" step="0.01" min="0.1" oninput="updateLiveCalculations()" class="input-dark w-full py-2 pl-9 pr-3 rounded-xl text-right font-semibold text-amber-500">
+      </div>
+    </div>
 
-    <!-- FIREBASE AND SYSTEM SCRIPTING -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, collection, query, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+    <!-- TAB 1: REGISTRAR NUEVO CIERRE DE CAJA -->
+    <section id="tab-cierre" class="space-y-6">
+      
+      <!-- CALCULATOR MATRIX -->
+      <div class="card-dark rounded-2xl p-6">
+        <h2 class="text-sm font-bold tracking-wider text-gray-400 mb-4 flex items-center uppercase">
+          <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full inline-block mr-2 animate-pulse"></span>
+          Ingresos / Métodos de Pago
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Zelle (USD) -->
+          <div class="bg-[#242429]/50 border border-[#2d2d34] p-4 rounded-xl flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-gray-300">Zelle (USD)</span>
+              <span class="text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono">$ USD</span>
+            </div>
+            <input type="number" id="monto-zelle" placeholder="0.00" step="0.01" min="0" oninput="updateLiveCalculations()" class="input-dark w-full py-2 px-3 rounded-lg text-lg text-right font-mono">
+          </div>
 
-        // Initialize Global State
-        // --- State Management ---
-        const state = {
-            currentDate: '',
-            // Captura de forma automática el parámetro de la URL (?store=gg) o usa 'gg' por defecto
-            currentStore: new URLSearchParams(window.location.search).get('store') || 'gg',
-            exchangeRate: 1,
-            sales: { usd: 0, cashBs: 0, mobileBs: 0, zelle: 0 },
-            expenses: [],
-            totalExpenses: 0,
-            calculated: false
-        };
+          <!-- Dólares Efectivo (USD) -->
+          <div class="bg-[#242429]/50 border border-[#2d2d34] p-4 rounded-xl flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-gray-300">Efectivo Dólares ($)</span>
+              <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono">$ USD</span>
+            </div>
+            <input type="number" id="monto-dolares" placeholder="0.00" step="0.01" min="0" oninput="updateLiveCalculations()" class="input-dark w-full py-2 px-3 rounded-lg text-lg text-right font-mono">
+          </div>
 
-        // --- Mock Data fallback if database configuration is absent or empty ---
-        const mockCierres = [
-            {
-                id: "c1",
-                fecha: "17/6/2026",
-                ventas: { efectivo_usd: 120.00, efectivo_bs: 1500.00, pago_movil_bs: 18450.00, zelle_usd: 50.00 },
-                gastos: [{ descripcion: "PAGO TRANSPORTE", monto: 15.00 }, { descripcion: "ALMUERZO DE PERSONAL", monto: 20.00 }],
-                total_gastos: 35.00
-            },
-            {
-                id: "c2",
-                fecha: "16/6/2026",
-                ventas: { efectivo_usd: 80.00, efectivo_bs: 450.00, pago_movil_bs: 12900.00, zelle_usd: 100.00 },
-                gastos: [{ descripcion: "RECARGA DE AGUA", monto: 5.00 }],
-                total_gastos: 5.00
-            },
-            {
-                id: "c3",
-                fecha: "15/6/2026",
-                ventas: { efectivo_usd: 210.00, efectivo_bs: 0.00, pago_movil_bs: 34100.50, zelle_usd: 0.00 },
-                gastos: [{ descripcion: "PAPELERÍA IMPRESORA", monto: 12.50 }],
-                total_gastos: 12.50
-            }
-        ];
+          <!-- Efectivo Bolívares (VES) -->
+          <div class="bg-[#242429]/50 border border-[#2d2d34] p-4 rounded-xl flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-gray-300">Efectivo Bolívares (Bs.)</span>
+              <span class="text-xs px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-mono">Bs. VES</span>
+            </div>
+            <input type="number" id="monto-efectivo-bs" placeholder="0.00" step="0.01" min="0" oninput="updateLiveCalculations()" class="input-dark w-full py-2 px-3 rounded-lg text-lg text-right font-mono">
+          </div>
 
-        // --- Firebase Configuration Initialization ---
-        let db = null;
-        let auth = null;
-        let user = null;
-        let appId = 'default-app-id';
+          <!-- Pago Móvil (VES) -->
+          <div class="bg-[#242429]/50 border border-[#2d2d34] p-4 rounded-xl flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-gray-300">Pago Móvil (Bs.)</span>
+              <span class="text-xs px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-mono">Bs. VES</span>
+            </div>
+            <input type="number" id="monto-pago-movil" placeholder="0.00" step="0.01" min="0" oninput="updateLiveCalculations()" class="input-dark w-full py-2 px-3 rounded-lg text-lg text-right font-mono">
+          </div>
+        </div>
+      </div>
 
-        async function setupFirebase() {
-            try {
-                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                    const firebaseConfig = JSON.parse(__firebase_config);
-                    const app = initializeApp(firebaseConfig);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
-                    appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+      <!-- EGRESOS / GASTOS (Como el diseño de la imagen) -->
+      <div class="card-dark rounded-2xl p-6">
+        <h2 class="text-sm font-bold tracking-wider text-rose-500 mb-4 flex items-center uppercase">
+          <span class="w-2.5 h-2.5 bg-[#f43f5e] rounded-full inline-block mr-2"></span>
+          Egresos / Gastos
+        </h2>
+        
+        <!-- Inputs de descripción, monto y moneda -->
+        <div class="flex flex-col sm:flex-row gap-3 mb-4">
+          <div class="flex-grow">
+            <input type="text" id="gasto-descripcion" placeholder="Descripción gasto..." class="input-dark w-full py-2.5 px-4 rounded-xl text-sm placeholder-gray-500">
+          </div>
+          <div class="w-full sm:w-40 flex gap-2">
+            <input type="number" id="gasto-monto" placeholder="Monto" step="0.01" min="0.01" class="input-dark w-full py-2.5 px-4 rounded-xl text-sm placeholder-gray-500">
+            <select id="gasto-moneda" class="input-dark px-2 rounded-xl text-xs font-mono">
+              <option value="USD">$</option>
+              <option value="VES">Bs</option>
+            </select>
+          </div>
+        </div>
 
-                    // Rule 3: Auth Before Queries
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+        <!-- Botón de añadir gasto -->
+        <button type="button" onclick="addGastoItem()" class="w-full py-2.5 border border-[#2d2d34] hover:bg-[#242429] text-gray-300 font-medium text-sm rounded-xl tracking-wider transition-all uppercase flex items-center justify-center space-x-2">
+          <span>+ Añadir Gasto</span>
+        </button>
 
-                    onAuthStateChanged(auth, (currentUser) => {
-                        user = currentUser;
-                        if (user) {
-                            listenToCierres();
-                        }
-                    });
-                } else {
-                    console.warn("No __firebase_config detected. Operating on high-fidelity offline mode.");
-                    loadMockData();
-                }
-            } catch (err) {
-                console.error("Firebase Initialization Error:", err);
-                showToast("Error de conexión a Firebase. Usando modo simulado local.", "error");
-                loadMockData();
-            }
+        <!-- Lista de gastos añadidos temporalmente -->
+        <div id="gastos-agregados" class="mt-4 space-y-2 max-h-40 overflow-y-auto pr-1">
+          <p class="text-xs text-gray-500 text-center py-2" id="no-gastos-placeholder">No se han registrado gastos para este cierre.</p>
+        </div>
+      </div>
+
+      <!-- RESUMEN CONSOLIDADO EN VIVO -->
+      <div class="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/20 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-6">
+        <div>
+          <h3 class="font-bold text-amber-500 text-sm tracking-wide uppercase">Cálculo Consolidado En Vivo</h3>
+          <p class="text-xs text-gray-400 mt-1">Suma total ya convertida según la tasa del día, restando los gastos cargados.</p>
+        </div>
+        <div class="flex items-center space-x-6 text-right w-full md:w-auto justify-between md:justify-end">
+          <div>
+            <p class="text-xs text-gray-400">Total Neto Consolidado</p>
+            <div class="text-2xl font-black text-white font-mono" id="live-total-usd">$0.00</div>
+            <div class="text-xs text-amber-500/80 font-mono font-bold" id="live-total-ves">0.00 Bs.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTÓN DE PROCESAR CIERRE (Estilo oro con degradado) -->
+      <div class="pt-2">
+        <button onclick="saveCierreToFirebase()" id="procesar-cierre-btn" class="w-full py-4 bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-extrabold text-sm rounded-2xl tracking-widest transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-amber-500/20 uppercase flex items-center justify-center space-x-2">
+          <i data-lucide="archive" class="w-5 h-5"></i>
+          <span>Procesar Cierre</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- TAB 2: HISTORIAL DE CIERRES -->
+    <section id="tab-historial" class="hidden space-y-6">
+      
+      <div class="card-dark rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-sm font-bold tracking-wider text-gray-400 flex items-center uppercase">
+            <span class="w-2.5 h-2.5 bg-gray-500 rounded-full inline-block mr-2"></span>
+            Historial Cierres
+          </h2>
+          <span class="text-xs text-gray-400 bg-[#242429] px-3 py-1 rounded-full border border-[#2d2d34]" id="cierre-count-badge">Cargando registros...</span>
+        </div>
+
+        <!-- Lista del historial de cierres -->
+        <div class="space-y-3" id="historial-container">
+          <!-- Esqueleto de carga inicial -->
+          <div class="animate-pulse space-y-3">
+            <div class="h-16 bg-[#242429] rounded-xl border border-[#2d2d34]"></div>
+            <div class="h-16 bg-[#242429] rounded-xl border border-[#2d2d34]"></div>
+            <div class="h-16 bg-[#242429] rounded-xl border border-[#2d2d34]"></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- MODAL: VENTANA EMERGENTE DETALLES DE CIERRE -->
+  <div id="details-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-all duration-300">
+    <div class="card-dark w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-zinc-700/50 flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="p-6 border-b border-[#2d2d34] flex justify-between items-center bg-[#1e1e24]">
+        <div class="flex items-center space-x-3">
+          <div class="bg-amber-500 text-black p-2 rounded-xl">
+            <i data-lucide="file-text" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-lg">Resumen de Cierre</h3>
+            <p class="text-xs text-gray-400" id="modal-fecha">Fecha: --/--/----</p>
+          </div>
+        </div>
+        <button onclick="closeDetailsModal()" class="text-gray-400 hover:text-white p-2 hover:bg-[#2d2d34] rounded-full transition-all">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Contenido -->
+      <div class="p-6 space-y-6 overflow-y-auto flex-grow">
+        <!-- Tasa aplicada -->
+        <div class="flex justify-between items-center p-3 bg-zinc-900/60 rounded-xl border border-[#2d2d34]">
+          <span class="text-xs text-gray-400 font-medium">Tasa de Cambio aplicada:</span>
+          <span class="text-sm font-bold text-amber-500" id="modal-tasa">Bs. 40.00</span>
+        </div>
+
+        <!-- Métodos de pago desglosados -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-gray-400 tracking-wider uppercase">Ingresos por Método de Pago</h4>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-[#242429] p-3 rounded-xl border border-[#2d2d34]">
+              <span class="text-xs text-gray-400 block mb-1">Zelle</span>
+              <span class="text-base font-bold font-mono text-white" id="modal-zelle">$0.00</span>
+            </div>
+            <div class="bg-[#242429] p-3 rounded-xl border border-[#2d2d34]">
+              <span class="text-xs text-gray-400 block mb-1">Efectivo $</span>
+              <span class="text-base font-bold font-mono text-white" id="modal-dolares">$0.00</span>
+            </div>
+            <div class="bg-[#242429] p-3 rounded-xl border border-[#2d2d34]">
+              <span class="text-xs text-gray-400 block mb-1">Efectivo Bs.</span>
+              <span class="text-base font-bold font-mono text-white" id="modal-bolivares">0.00 Bs.</span>
+            </div>
+            <div class="bg-[#242429] p-3 rounded-xl border border-[#2d2d34]">
+              <span class="text-xs text-gray-400 block mb-1">Pago Móvil</span>
+              <span class="text-base font-bold font-mono text-white" id="modal-pago-movil">0.00 Bs.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gastos en Modal -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-rose-500 tracking-wider uppercase flex items-center justify-between">
+            <span>Lista de Gastos</span>
+            <span class="text-xs font-normal text-gray-400" id="modal-gastos-count">0 gastos</span>
+          </h4>
+          <div class="bg-[#242429]/50 rounded-xl border border-[#2d2d34] overflow-hidden">
+            <div class="max-h-40 overflow-y-auto divide-y divide-[#2d2d34]" id="modal-gastos-list">
+              <!-- Cargado dinámicamente -->
+            </div>
+            <div class="p-3 bg-zinc-900 flex justify-between items-center text-xs">
+              <span class="text-gray-400">Total Deducciones por Gastos:</span>
+              <span class="font-bold text-rose-400 font-mono" id="modal-total-gastos">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cifra Consolidada Final de Todo -->
+        <div class="bg-gradient-to-r from-amber-500/10 to-yellow-600/10 border border-amber-500/30 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-amber-500 tracking-wider uppercase">Fórmula de Conversión</h4>
+            <span class="text-[10px] text-gray-400 font-mono">Conversión automática de divisas</span>
+          </div>
+          
+          <!-- Representación matemática LaTeX -->
+          <div class="text-xs text-center font-mono py-2 bg-black/40 rounded-lg text-gray-300">
+            $$\text{Total USD} = Z + D + \frac{Bs + PM}{\text{Tasa}} - \text{Gastos}_\text{USD}$$
+          </div>
+
+          <hr class="border-amber-500/20">
+
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">Total Neto Consolidado</p>
+              <p class="text-3xl font-black text-white font-mono tracking-tight mt-1" id="modal-grand-total-usd">$0.00</p>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] text-amber-500/80 font-semibold uppercase">Equivalente en Bolívares</p>
+              <p class="text-lg font-bold text-gray-300 font-mono mt-1" id="modal-grand-total-ves">0.00 Bs.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer acción -->
+      <div class="p-4 bg-[#1e1e24] border-t border-[#2d2d34] flex justify-end">
+        <button onclick="closeDetailsModal()" class="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl uppercase tracking-wider transition-all">
+          Cerrar Ventana
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Integración de Firebase usando tus credenciales -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, addDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Credenciales de Firebase proporcionadas por el usuario
+    const firebaseConfig = {
+      apiKey: "AIzaSyD1sJKaLw4ba41SPTMy1ZoPQCSHynuzLrA",
+      authDomain: "gyg-2-0.firebaseapp.com",
+      databaseURL: "https://gyg-2-0-default-rtdb.firebaseio.com",
+      projectId: "gyg-2-0",
+      storageBucket: "gyg-2-0.firebasestorage.app",
+      messagingSenderId: "248474716571",
+      appId: "1:248474716571:web:b6a2bfa565c3125d08393e",
+      measurementId: "G-DPBHL3P6D7"
+    };
+
+    // Inicializando Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'gyg-2-0';
+
+    // Manejadores de Estado
+    let user = null;
+    let localGastos = [];
+    let cierresList = [];
+
+    // Inicializar autenticación de forma segura antes de cualquier query (Regla 3 de Firebase)
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
         }
+      } catch (error) {
+        showToast("Error al inicializar sesión en Firebase: " + error.message, true);
+      }
+    };
 
-        function listenToCierres() {
-            if (!db || !user) return;
-            // Rule 1: Strict paths for public data
-            const cierresColRef = collection(db, 'artifacts', appId, 'public', 'data', 'cierres');
-            
-            // Rule 2: Simple query (no orderBy with multiple fields to avoid compound index requirement)
-            const q = query(cierresColRef);
+    // Escuchar el estado de autenticación de forma en tiempo real
+    onAuthStateChanged(auth, (loggedUser) => {
+      user = loggedUser;
+      if (user) {
+        // Ejecutar lectura una vez autenticado
+        listenToCierres();
+      } else {
+        showToast("Esperando autenticación...", false);
+      }
+    });
 
-            onSnapshot(q, (snapshot) => {
-                let fetchedCierres = [];
-                snapshot.forEach((doc) => {
-                    fetchedCierres.push({ id: doc.id, ...doc.data() });
-                });
+    // Arrancar la autenticación inmediatamente
+    initAuth();
 
-                // Merge and filter duplicate dates against mock templates
-                const merged = [...fetchedCierres];
-                mockCierres.forEach(mock => {
-                    if (!merged.some(c => c.fecha === mock.fecha)) {
-                        merged.push(mock);
-                    }
-                });
+    // Escuchar cambios en los cierres de caja en tiempo real (Ruta estricta Regla 1 y 2)
+    function listenToCierres() {
+      if (!user) return;
+      
+      const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'cierres_caja');
+      
+      onSnapshot(colRef, (snapshot) => {
+        cierresList = [];
+        snapshot.forEach((doc) => {
+          cierresList.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // Ordenar localmente para evitar la necesidad de configurar índices compuestos manuales
+        cierresList.sort((a, b) => new Date(b.creadoEn) - new Date(a.creadoEn));
+        
+        renderHistorial();
+        document.getElementById('cierre-count-badge').innerText = `${cierresList.length} Registros Guardados`;
+      }, (error) => {
+        showToast("Error cargando historial de cierres: " + error.message, true);
+      });
+    }
 
-                // Sort purely in memory
-                merged.sort((a, b) => {
-                    const parseDate = (dStr) => {
-                        const parts = dStr.split('/');
-                        return new Date(parts[2], parts[1] - 1, parts[0]);
-                    };
-                    return parseDate(b.fecha) - parseDate(a.fecha);
-                });
+    // Exponer funciones globalmente al objeto window para su correcto funcionamiento en los botones HTML
+    window.addGastoItem = function() {
+      const descInput = document.getElementById('gasto-descripcion');
+      const montoInput = document.getElementById('gasto-monto');
+      const monedaInput = document.getElementById('gasto-moneda');
 
-                state.cierres = merged;
-                renderHistoryTable();
-            }, (error) => {
-                console.error("Firestore Listen Failure:", error);
-                showToast("Fallo al actualizar base de datos en tiempo real.", "error");
-                loadMockData();
-            });
+      const desc = descInput.value.trim();
+      const montoVal = parseFloat(montoInput.value);
+      const moneda = monedaInput.value;
+
+      if (!desc || isNaN(montoVal) || montoVal <= 0) {
+        showToast("Por favor, ingresa una descripción y un monto de gasto válido.", true);
+        return;
+      }
+
+      const nuevoGasto = {
+        id: crypto.randomUUID(),
+        descripcion: desc,
+        monto: montoVal,
+        moneda: moneda
+      };
+
+      localGastos.push(nuevoGasto);
+      
+      descInput.value = '';
+      montoInput.value = '';
+      
+      updateLiveCalculations();
+      renderLocalGastosList();
+      showToast("Gasto añadido");
+    };
+
+    window.removeGastoItem = function(id) {
+      localGastos = localGastos.filter(g => g.id !== id);
+      updateLiveCalculations();
+      renderLocalGastosList();
+    };
+
+    function renderLocalGastosList() {
+      const container = document.getElementById('gastos-agregados');
+
+      if (localGastos.length === 0) {
+        container.innerHTML = `<p class="text-xs text-gray-500 text-center py-2" id="no-gastos-placeholder">No se han registrado gastos para este cierre.</p>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      localGastos.forEach(g => {
+        const div = document.createElement('div');
+        div.className = "flex items-center justify-between bg-[#242429] border border-[#2d2d34] p-3 rounded-xl";
+        div.innerHTML = `
+          <div class="flex flex-col">
+            <span class="text-sm font-medium text-white">${g.descripcion}</span>
+            <span class="text-xs text-rose-400 font-mono">${g.moneda === 'USD' ? '$' : 'Bs.'} ${g.monto.toFixed(2)}</span>
+          </div>
+          <button onclick="removeGastoItem('${g.id}')" class="text-gray-500 hover:text-rose-500 p-1.5 transition-all">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        `;
+        container.appendChild(div);
+      });
+      lucide.createIcons();
+    }
+
+    // Cálculos consolidados en vivo
+    window.calculateTotals = function() {
+      const tasa = parseFloat(document.getElementById('tasa-dia').value) || 1;
+      
+      const zelle = parseFloat(document.getElementById('monto-zelle').value) || 0;
+      const dolares = parseFloat(document.getElementById('monto-dolares').value) || 0;
+      const bolivares = parseFloat(document.getElementById('monto-efectivo-bs').value) || 0;
+      const pagoMovil = parseFloat(document.getElementById('monto-pago-movil').value) || 0;
+
+      // Todo consolidado en USD
+      const ingresosUsd = zelle + dolares + (bolivares / tasa) + (pagoMovil / tasa);
+      // Todo consolidado en VES
+      const ingresosVes = (zelle * tasa) + (dolares * tasa) + bolivares + pagoMovil;
+
+      // Cálculos de gastos
+      let gastosUsd = 0;
+      let gastosVes = 0;
+
+      localGastos.forEach(g => {
+        if (g.moneda === 'USD') {
+          gastosUsd += g.monto;
+          gastosVes += (g.monto * tasa);
+        } else {
+          gastosUsd += (g.monto / tasa);
+          gastosVes += g.monto;
         }
+      });
 
-        function loadMockData() {
-            state.cierres = [...mockCierres];
-            renderHistoryTable();
+      const netoUsd = ingresosUsd - gastosUsd;
+      const netoVes = ingresosVes - gastosVes;
+
+      return {
+        tasa,
+        ingresos: { zelle, dolares, bolivares, pagoMovil },
+        totales: {
+          ingresosUsd,
+          ingresosVes,
+          gastosUsd,
+          gastosVes,
+          netoUsd,
+          netoVes
         }
+      };
+    };
 
-        // --- Render UI Modules ---
+    window.updateLiveCalculations = function() {
+      const calculated = calculateTotals();
+      
+      document.getElementById('live-total-usd').innerText = `$ ${calculated.totales.netoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('live-total-ves').innerText = `${calculated.totales.netoVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
+    };
 
-        window.renderExpenses = function() {
-            const container = document.getElementById('active-expenses-container');
-            if (!container) return;
-            container.innerHTML = '';
+    // Guardar cierre de caja diario en Firebase Firestore
+    window.saveCierreToFirebase = async function() {
+      if (!user) {
+        showToast("Error: No estás autenticado en el sistema de Firebase.", true);
+        return;
+      }
 
-            if (state.gastos.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-6 text-zinc-600 text-xs italic">
-                        No hay egresos cargados hoy
-                    </div>
-                `;
-                return;
-            }
+      const calculated = calculateTotals();
+      
+      if (calculated.ingresos.zelle === 0 && calculated.ingresos.dolares === 0 && 
+          calculated.ingresos.bolivares === 0 && calculated.ingresos.pagoMovil === 0 && localGastos.length === 0) {
+        showToast("Por favor, introduce al menos un movimiento o ingreso para realizar el cierre.", true);
+        return;
+      }
 
-            state.gastos.forEach((g) => {
-                const div = document.createElement('div');
-                div.className = "flex justify-between items-center bg-brand-inputBg p-3 rounded-lg border border-zinc-900 group transition-all hover:border-brand-red/30";
-                div.innerHTML = `
-                    <div class="flex items-center gap-2">
-                        <button onclick="removeExpense('${g.id}')" class="text-zinc-600 hover:text-brand-red opacity-0 group-hover:opacity-100 transition-opacity pr-1 text-xs">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                        <span class="text-xs text-zinc-400 font-mono uppercase font-bold tracking-wider">${g.descripcion}</span>
-                    </div>
-                    <span class="text-xs font-mono font-bold text-brand-red">-$${g.monto.toFixed(2)}</span>
-                `;
-                container.appendChild(div);
-            });
-        };
+      const btn = document.getElementById('procesar-cierre-btn');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-pulse">Guardando cierre...</span>`;
 
-        window.renderHistoryTable = function() {
-            const tbody = document.getElementById('history-table-body');
-            if (!tbody) return;
-            tbody.innerHTML = '';
+      const today = new Date();
+      const formattedDate = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
 
-            if (state.cierres.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="2" class="text-center py-10 text-zinc-600 text-xs italic">
-                            No hay cierres históricos
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
+      const closureData = {
+        fecha: today.toISOString().split('T')[0],
+        fechaFormateada: formattedDate,
+        tasa: calculated.tasa,
+        ingresos: calculated.ingresos,
+        gastos: localGastos,
+        totales: calculated.totales,
+        creadoEn: today.toISOString()
+      };
 
-            state.cierres.forEach((cierre) => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-zinc-900/30 transition-all border-b border-zinc-900/40";
-                tr.innerHTML = `
-                    <td class="py-4 pl-1 text-zinc-300 font-mono text-xs font-bold tracking-wide">${cierre.fecha}</td>
-                    <td class="py-4 text-right pr-1">
-                        <button onclick="openDetails('${cierre.id}')" class="px-5 py-1.5 bg-brand-btnGray hover:bg-zinc-800 text-zinc-300 hover:text-white text-[10px] font-bold tracking-widest uppercase rounded border border-zinc-800 hover:border-zinc-700 transition-all active:scale-95">
-                            Detalles
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        };
+      try {
+        const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'cierres_caja');
+        await addDoc(colRef, closureData);
+        
+        showToast("¡Cierre de Caja Diario guardado con éxito en Firebase!");
+        
+        // Resetear inputs del formulario
+        document.getElementById('monto-zelle').value = '';
+        document.getElementById('monto-dolares').value = '';
+        document.getElementById('monto-efectivo-bs').value = '';
+        document.getElementById('monto-pago-movil').value = '';
+        localGastos = [];
+        renderLocalGastosList();
+        updateLiveCalculations();
 
-        // --- Core User Workflows ---
+        // Redireccionar automáticamente al historial después de un breve delay
+        setTimeout(() => {
+          switchTab('historial');
+        }, 1200);
 
-        window.addExpenseToList = function() {
-            const descInput = document.getElementById('expense-desc-input');
-            const amountInput = document.getElementById('expense-amount-input');
-            
-            const desc = descInput.value.trim();
-            const amount = parseFloat(amountInput.value);
+      } catch (err) {
+        showToast("Error al guardar en tu base de datos: " + err.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="archive" class="w-5 h-5"></i><span>Procesar Cierre</span>`;
+        lucide.createIcons();
+      }
+    };
 
-            if (!desc || isNaN(amount) || amount <= 0) {
-                showToast("Por favor, ingresa una descripción y un monto de gasto válido", "warning");
-                return;
-            }
+    // Renderizar lista en base a la información de Firestore en tiempo real
+    function renderHistorial() {
+      const container = document.getElementById('historial-container');
+      
+      if (cierresList.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 bg-[#242429]/40 border border-[#2d2d34] rounded-2xl">
+            <p class="text-sm text-gray-500">Aún no se han guardado cierres de caja en Firebase.</p>
+            <p class="text-xs text-gray-600 mt-1">Registra un nuevo cierre para verlo reflejado aquí.</p>
+          </div>
+        `;
+        return;
+      }
 
-            state.gastos.push({
-                id: crypto.randomUUID(),
-                descripcion: desc,
-                monto: amount
-            });
+      container.innerHTML = '';
+      cierresList.forEach((c) => {
+        const netValueUSD = c.totales.netoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const div = document.createElement('div');
+        div.className = "flex items-center justify-between bg-[#242429] hover:bg-[#2d2d34] border border-[#2d2d34] p-4 rounded-2xl transition-all duration-200 shadow-sm";
+        div.innerHTML = `
+          <div>
+            <div class="text-sm font-bold text-white tracking-wider">${c.fechaFormateada}</div>
+            <div class="text-[11px] text-gray-400 mt-0.5 font-mono">Total Neto: $ ${netValueUSD}</div>
+          </div>
+          <button onclick="openDetailsModal('${c.id}')" class="px-5 py-2.5 bg-zinc-900 border border-[#2d2d34] text-xs text-white font-bold rounded-xl tracking-wider hover:bg-zinc-800 uppercase transition-all">
+            Detalles
+          </button>
+        `;
+        container.appendChild(div);
+      });
+    }
 
-            descInput.value = '';
-            amountInput.value = '';
-            renderExpenses();
-            showToast("Gasto añadido con éxito", "success");
-        };
+    // Modal de Detalles del Historial de Cierres
+    window.openDetailsModal = function(id) {
+      const record = cierresList.find(c => c.id === id);
+      if (!record) return;
 
-        window.removeExpense = function(id) {
-            state.gastos = state.gastos.filter(g => g.id !== id);
-            renderExpenses();
-            showToast("Gasto removido del conteo", "info");
-        };
+      document.getElementById('modal-fecha').innerText = `Fecha de registro: ${record.fechaFormateada}`;
+      document.getElementById('modal-tasa').innerText = `Bs. ${record.tasa.toFixed(2)}`;
 
-        window.processCierre = async function() {
-            // Read active input values
-            const eUsd = parseFloat(document.getElementById('input-efectivo-usd').value) || 0;
-            const eBs = parseFloat(document.getElementById('input-efectivo-bs').value) || 0;
-            const pmBs = parseFloat(document.getElementById('input-pmovil-bs').value) || 0;
-            const zUsd = parseFloat(document.getElementById('input-zelle-usd').value) || 0;
+      document.getElementById('modal-zelle').innerText = `$ ${record.ingresos.zelle.toFixed(2)}`;
+      document.getElementById('modal-dolares').innerText = `$ ${record.ingresos.dolares.toFixed(2)}`;
+      document.getElementById('modal-bolivares').innerText = `${record.ingresos.bolivares.toFixed(2)} Bs.`;
+      document.getElementById('modal-pago-movil').innerText = `${record.ingresos.pagoMovil.toFixed(2)} Bs.`;
 
-            const totalGastos = state.gastos.reduce((sum, g) => sum + g.monto, 0);
+      const modalGastosList = document.getElementById('modal-gastos-list');
+      modalGastosList.innerHTML = '';
+      
+      if (!record.gastos || record.gastos.length === 0) {
+        modalGastosList.innerHTML = `<div class="p-4 text-center text-xs text-gray-500">Ningún gasto registrado.</div>`;
+        document.getElementById('modal-gastos-count').innerText = "0 gastos";
+      } else {
+        document.getElementById('modal-gastos-count').innerText = `${record.gastos.length} gastos`;
+        record.gastos.forEach(g => {
+          const row = document.createElement('div');
+          row.className = "p-3 flex justify-between items-center bg-zinc-900/40 hover:bg-[#242429] transition-all";
+          row.innerHTML = `
+            <span class="text-xs text-gray-300 font-medium">${g.descripcion}</span>
+            <span class="text-xs font-bold font-mono text-rose-400">${g.moneda === 'USD' ? '$' : 'Bs.'} ${g.monto.toFixed(2)}</span>
+          `;
+          modalGastosList.appendChild(row);
+        });
+      }
 
-            const newCierre = {
-                id: "cierre_" + Date.now(),
-                fecha: state.currentDate,
-                ventas: {
-                    efectivo_usd: eUsd,
-                    efectivo_bs: eBs,
-                    pago_movil_bs: pmBs,
-                    zelle_usd: zUsd
-                },
-                gastos: [...state.gastos],
-                total_gastos: totalGastos,
-                created_at: new Date().toISOString()
-            };
+      document.getElementById('modal-total-gastos').innerText = `$ ${record.totales.gastosUsd.toFixed(2)}`;
+      document.getElementById('modal-grand-total-usd').innerText = `$ ${record.totales.netoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('modal-grand-total-ves').innerText = `${record.totales.netoVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
 
-            // Save in database if available, otherwise append offline
-            if (db && user) {
-                try {
-                    // Rule 1: Strict collection paths
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'cierres', newCierre.id);
-                    await setDoc(docRef, newCierre);
-                    showToast("Cierre procesado y guardado en la nube con éxito", "success");
-                } catch (err) {
-                    console.error("Firestore Save Error:", err);
-                    showToast("Error al guardar en la nube. Guardando localmente.", "error");
-                    saveLocalFallback(newCierre);
-                }
-            } else {
-                saveLocalFallback(newCierre);
-                showToast("Cierre procesado y guardado localmente", "success");
-            }
-        };
+      // Mostrar el modal
+      const modal = document.getElementById('details-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
 
-        function saveLocalFallback(newCierre) {
-            // Check if date already exists in state and replace, otherwise add
-            const existingIndex = state.cierres.findIndex(c => c.fecha === newCierre.fecha);
-            if (existingIndex > -1) {
-                state.cierres[existingIndex] = newCierre;
-            } else {
-                state.cierres.unshift(newCierre);
-            }
-            renderHistoryTable();
-        }
+    window.closeDetailsModal = function() {
+      const modal = document.getElementById('details-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
 
-        window.openDetails = function(cierreId) {
-            const cierre = state.cierres.find(c => c.id === cierreId);
-            if (!cierre) return;
+  </script>
 
-            document.getElementById('modal-date-subtitle').innerText = `Fecha del Cierre: ${cierre.fecha}`;
-            
-            // Populating Sales Values
-            document.getElementById('modal-val-efectivo-usd').innerText = `$${(cierre.ventas?.efectivo_usd || 0).toFixed(2)}`;
-            document.getElementById('modal-val-efectivo-bs').innerText = `${(cierre.ventas?.efectivo_bs || 0).toFixed(2)} Bs`;
-            document.getElementById('modal-val-pmovil-bs').innerText = `${(cierre.ventas?.pago_movil_bs || 0).toFixed(2)} Bs`;
-            document.getElementById('modal-val-zelle-usd').innerText = `$${(cierre.ventas?.zelle_usd || 0).toFixed(2)}`;
+  <!-- Control de Pestañas SPA -->
+  <script>
+    function switchTab(tabName) {
+      const tabCierre = document.getElementById('tab-cierre');
+      const tabHistorial = document.getElementById('tab-historial');
+      
+      const tabCierreBtn = document.getElementById('tab-cierre-btn');
+      const tabHistorialBtn = document.getElementById('tab-historial-btn');
 
-            // Populating Expense Sub-list
-            const expensesContainer = document.getElementById('modal-expenses-container');
-            expensesContainer.innerHTML = '';
+      if (tabName === 'cierre') {
+        tabCierre.classList.remove('hidden');
+        tabHistorial.classList.add('hidden');
+        
+        tabCierreBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-amber-500 text-black shadow-md";
+        tabHistorialBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-300 hover:bg-[#242429]";
+      } else {
+        tabCierre.classList.add('hidden');
+        tabHistorial.classList.remove('hidden');
+        
+        tabCierreBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-300 hover:bg-[#242429]";
+        tabHistorialBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-amber-500 text-black shadow-md";
+      }
+    }
 
-            const expenses = cierre.gastos || [];
-            if (expenses.length === 0) {
-                expensesContainer.innerHTML = `
-                    <div class="text-center py-6 text-zinc-600 text-xs italic">
-                        No se registraron egresos
-                    </div>
-                `;
-            } else {
-                expenses.forEach(g => {
-                    const row = document.createElement('div');
-                    row.className = "flex justify-between items-center bg-[#18181d] border border-zinc-900 p-2.5 rounded-lg";
-                    row.innerHTML = `
-                        <span class="text-[11px] text-zinc-400 uppercase font-bold tracking-wider">${g.descripcion}</span>
-                        <span class="text-xs font-bold text-brand-red">-$${g.monto.toFixed(2)}</span>
-                    `;
-                    expensesContainer.appendChild(row);
-                });
-            }
+    // Alertas tipo Toast personalizadas
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
 
-            // Calculations
-            const totalG = cierre.total_gastos || 0;
-            document.getElementById('modal-val-total-gastos').innerText = `-$${totalG.toFixed(2)}`;
+      toastMsg.innerText = message;
+      
+      if (isError) {
+        toast.className = "fixed bottom-5 right-5 z-50 flex items-center p-4 space-x-3 bg-zinc-900 border border-rose-500/50 rounded-xl shadow-2xl transition-all duration-300 max-w-md";
+        toastIcon.innerHTML = `<i data-lucide="alert-circle" class="w-5 h-5 text-rose-500"></i>`;
+      } else {
+        toast.className = "fixed bottom-5 right-5 z-50 flex items-center p-4 space-x-3 bg-zinc-900 border border-emerald-500/50 rounded-xl shadow-2xl transition-all duration-300 max-w-md";
+        toastIcon.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5 text-emerald-500"></i>`;
+      }
 
-            // Consolidated USD conversion rate (simulated standard POS rate 40 Bs/$)
-            const bsRate = 40.0;
-            const usdTotalVentas = (cierre.ventas?.efectivo_usd || 0) + (cierre.ventas?.zelle_usd || 0) + (((cierre.ventas?.efectivo_bs || 0) + (cierre.ventas?.pago_movil_bs || 0)) / bsRate);
-            const netoUSD = usdTotalVentas - totalG;
+      lucide.createIcons();
+      toast.classList.remove('hidden');
 
-            document.getElementById('modal-val-neto-usd').innerText = `$${netoUSD.toFixed(2)}`;
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 4000);
+    }
 
-            // Show Modal with clean transition
-            const modal = document.getElementById('details-modal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            setTimeout(() => {
-                modal.firstElementChild.classList.remove('scale-95');
-                modal.firstElementChild.classList.add('scale-100');
-            }, 50);
-        };
+    window.onload = function() {
+      lucide.createIcons();
+    };
+  </script>
 
-        window.closeDetailsModal = function() {
-            const modal = document.getElementById('details-modal');
-            modal.firstElementChild.classList.remove('scale-100');
-            modal.firstElementChild.classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }, 150);
-        };
+  <!-- Librería para el formateo de fórmulas en Modal de Detalles -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-        window.resetInputs = function() {
-            document.getElementById('input-efectivo-usd').value = "0.00";
-            document.getElementById('input-efectivo-bs').value = "0.00";
-            document.getElementById('input-pmovil-bs').value = "0.00";
-            document.getElementById('input-zelle-usd').value = "0.00";
-            
-            state.gastos = [];
-            renderExpenses();
-            showToast("Valores de conteo reiniciados", "info");
-        };
-
-        // --- Elegant Toast Notifications ---
-        window.showToast = function(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            if (!container) return;
-
-            const colors = {
-                success: 'border-emerald-500/30 bg-[#0e1612] text-emerald-400',
-                error: 'border-brand-red/30 bg-[#160e10] text-brand-red',
-                warning: 'border-amber-500/30 bg-[#16130e] text-amber-400',
-                info: 'border-zinc-800 bg-brand-card text-zinc-300'
-            };
-
-            const icons = {
-                success: '<i class="fa-solid fa-circle-check"></i>',
-                error: '<i class="fa-solid fa-circle-xmark"></i>',
-                warning: '<i class="fa-solid fa-triangle-exclamation"></i>',
-                info: '<i class="fa-solid fa-circle-info"></i>'
-            };
-
-            const toast = document.createElement('div');
-            toast.className = `flex items-center gap-3 px-4 py-3 border.5 rounded-lg shadow-xl text-xs font-semibold tracking-wide uppercase font-mono transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto border ${colors[type]}`;
-            toast.innerHTML = `${icons[type]} <span>${message}</span>`;
-            
-            container.appendChild(toast);
-
-            // Animate In
-            setTimeout(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            }, 10);
-
-            // Animate Out
-            setTimeout(() => {
-                toast.classList.add('translate-y-2', 'opacity-0');
-                setTimeout(() => {
-                    toast.remove();
-                }, 300);
-            }, 4000);
-        };
-
-        // --- Start Up Executions ---
-        window.onload = function() {
-            // Apply Dynamic Date Badge
-            const today = new Date();
-            const dateStr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
-            state.currentDate = dateStr;
-            const badge = document.getElementById('current-date-badge');
-            if (badge) badge.innerText = dateStr;
-
-            setupFirebase();
-            renderExpenses();
-        };
-
-    </script>
 </body>
 </html>
