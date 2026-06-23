@@ -329,19 +329,21 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const appId = 'gyg-2-0';
 
     let localGastos = [];
     let cierresList = [];
 
+    // Arrancar procesos principales
     listenToCierres();
     fetchVentasDelDia();
 
+    // RUTA EXACTA Y CORREGIDA PARA ACCEDER A LA SUBCOLECCIÓN DE FORMA MODULAR
     function fetchVentasDelDia() {
       const statusBadge = document.getElementById('sync-status');
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
       
-      const salesRef = collection(db, 'artifacts', appId, 'public', 'data', 'tienda_1_sales');
+      // Corregido: Mapeo estricto de los segmentos para Firestore modular
+      const salesRef = collection(db, 'artifacts', 'gg-shopping-pos', 'public', 'data', 'tienda_1_sales');
       const q = query(salesRef, where('fecha', '==', todayStr));
 
       onSnapshot(q, (snapshot) => {
@@ -369,14 +371,17 @@
           }
         });
 
+        // Cargar los totales calculados automáticamente en los inputs correspondientes
         document.getElementById('monto-zelle').value = totalZelle > 0 ? totalZelle.toFixed(2) : '';
         document.getElementById('monto-dolares').value = totalDolares > 0 ? totalDolares.toFixed(2) : '';
         document.getElementById('monto-efectivo-bs').value = totalBolivares > 0 ? totalBolivares.toFixed(2) : '';
         document.getElementById('monto-pago-movil').value = totalPagoMovil > 0 ? totalPagoMovil.toFixed(2) : '';
 
+        // Actualizar UI del estado
         statusBadge.innerText = `Sincronizado: ${conteo} ventas de hoy cargadas`;
         statusBadge.className = "text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg";
         
+        // Recalcular el panel neto consolidado inferior
         updateLiveCalculations();
       }, (error) => {
         console.error("Error sincronizando ventas: ", error);
@@ -386,7 +391,8 @@
     }
 
     function listenToCierres() {
-      const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'cierres_caja');
+      // Ajustado el almacenamiento de cierres_caja bajo la misma estructura del proyecto
+      const colRef = collection(db, 'artifacts', 'gg-shopping-pos', 'public', 'data', 'cierres_caja');
       
       onSnapshot(colRef, (snapshot) => {
         cierresList = [];
@@ -541,7 +547,7 @@
       };
 
       try {
-        const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'cierres_caja');
+        const colRef = collection(db, 'artifacts', 'gg-shopping-pos', 'public', 'data', 'cierres_caja');
         await addDoc(colRef, closureData);
         
         showToast("¡Cierre de Caja Diario guardado con éxito en Firebase!");
