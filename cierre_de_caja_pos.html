@@ -4,11 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cierre de Caja - Control Diario</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts (Inter) -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Lucide Icons for premium visual depth -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     body {
@@ -44,7 +41,6 @@
 </head>
 <body class="min-h-screen flex flex-col pb-12">
 
-  <!-- Header / Navigation -->
   <header class="border-b border-[#2d2d34] bg-[#1a1a1e] py-4 px-6 sticky top-0 z-40">
     <div class="max-w-4xl mx-auto flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -57,7 +53,6 @@
         </div>
       </div>
       
-      <!-- SPA Tab Navigation (Simulating index.html redirects) -->
       <div class="flex space-x-2">
         <button id="tab-cierre-btn" onclick="switchTab('cierre')" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-amber-500 text-black shadow-md">
           Nuevo Cierre
@@ -69,10 +64,8 @@
     </div>
   </header>
 
-  <!-- Main Container -->
   <main class="flex-grow max-w-4xl w-full mx-auto px-4 mt-6">
     
-    <!-- Status / Notification Toast -->
     <div id="toast" class="hidden fixed bottom-5 right-5 z-50 flex items-center p-4 space-x-3 bg-zinc-900 border border-amber-500/50 rounded-xl shadow-2xl transition-all duration-300 max-w-md">
       <div class="text-amber-500" id="toast-icon">
         <i data-lucide="info" class="w-5 h-5"></i>
@@ -80,7 +73,6 @@
       <div class="text-sm font-medium text-white" id="toast-message">Mensaje de notificación</div>
     </div>
 
-    <!-- TASA DEL DÍA FLOATING CARD -->
     <div class="card-dark rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="flex items-center space-x-3">
         <div class="bg-amber-500/10 text-amber-500 p-2 rounded-lg">
@@ -97,10 +89,8 @@
       </div>
     </div>
 
-    <!-- TAB 1: REGISTRAR NUEVO CIERRE DE CAJA -->
     <section id="tab-cierre" class="space-y-6">
       
-      <!-- CALCULATOR MATRIX -->
       <div class="card-dark rounded-2xl p-6">
         <h2 class="text-sm font-bold tracking-wider text-gray-400 mb-4 flex items-center uppercase">
           <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full inline-block mr-2 animate-pulse"></span>
@@ -108,7 +98,6 @@
         </h2>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Zelle (USD) -->
           <div class="bg-[#242429]/50 border border-[#2d2d34] p-4 rounded-xl flex flex-col justify-between">
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm font-medium text-gray-300">Zelle (USD)</span>
@@ -117,7 +106,6 @@
             <input type="number" id="monto-zelle" placeholder="0.00" step="0.01" min="0" oninput="updateLiveCalculations()" class="input-dark w-full py-2 px-3 rounded-lg text-lg text-right font-mono">
           </div>
 
-          <!-- Dólares Efectivo (USD) -->
           <div class="bg-[#242429]/50 border border-[#2d2d34] p-4 rounded-xl flex flex-col justify-between">
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm font-medium text-gray-300">Efectivo Dólares ($)</span>
@@ -126,7 +114,6 @@
             <input type="number" id="monto-dolares" placeholder="0.00" step="0.01" min="0" oninput="updateLiveCalculations()" class="input-dark w-full py-2 px-3 rounded-lg text-lg text-right font-mono">
           </div>
 
-          <!-- Efectivo Bolívares (VES) -->
           <div class="bg-[#242429]/50 border border-[#2d2d34] p-4 rounded-xl flex flex-col justify-between">
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm font-medium text-gray-300">Efectivo Bolívares (Bs.)</span>
@@ -135,7 +122,6 @@
             <input type="number" id="monto-efectivo-bs" placeholder="0.00" step="0.01" min="0" oninput="updateLiveCalculations()" class="input-dark w-full py-2 px-3 rounded-lg text-lg text-right font-mono">
           </div>
 
-          <!-- Pago Móvil (VES) -->
           <div class="bg-[#242429]/50 border border-[#2d2d34] p-4 rounded-xl flex flex-col justify-between">
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm font-medium text-gray-300">Pago Móvil (Bs.)</span>
@@ -146,14 +132,12 @@
         </div>
       </div>
 
-      <!-- EGRESOS / GASTOS -->
       <div class="card-dark rounded-2xl p-6">
         <h2 class="text-sm font-bold tracking-wider text-rose-500 mb-4 flex items-center uppercase">
           <span class="w-2.5 h-2.5 bg-[#f43f5e] rounded-full inline-block mr-2"></span>
           Egresos / Gastos
         </h2>
         
-        <!-- Inputs de descripción, monto y moneda -->
         <div class="flex flex-col sm:flex-row gap-3 mb-4">
           <div class="flex-grow">
             <input type="text" id="gasto-descripcion" placeholder="Descripción gasto..." class="input-dark w-full py-2.5 px-4 rounded-xl text-sm placeholder-gray-500">
@@ -167,18 +151,15 @@
           </div>
         </div>
 
-        <!-- Botón de añadir gasto -->
         <button type="button" onclick="addGastoItem()" class="w-full py-2.5 border border-[#2d2d34] hover:bg-[#242429] text-gray-300 font-medium text-sm rounded-xl tracking-wider transition-all uppercase flex items-center justify-center space-x-2">
           <span>+ Añadir Gasto</span>
         </button>
 
-        <!-- Lista de gastos añadidos temporalmente -->
         <div id="gastos-agregados" class="mt-4 space-y-2 max-h-40 overflow-y-auto pr-1">
           <p class="text-xs text-gray-500 text-center py-2" id="no-gastos-placeholder">No se han registrado gastos para este cierre.</p>
         </div>
       </div>
 
-      <!-- RESUMEN CONSOLIDADO EN VIVO -->
       <div class="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/20 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-6">
         <div>
           <h3 class="font-bold text-amber-500 text-sm tracking-wide uppercase">Cálculo Consolidado En Vivo</h3>
@@ -193,7 +174,6 @@
         </div>
       </div>
 
-      <!-- BOTÓN DE PROCESAR CIERRE -->
       <div class="pt-2">
         <button onclick="saveCierreToFirebase()" id="procesar-cierre-btn" class="w-full py-4 bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-extrabold text-sm rounded-2xl tracking-widest transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-amber-500/20 uppercase flex items-center justify-center space-x-2">
           <i data-lucide="archive" class="w-5 h-5"></i>
@@ -203,7 +183,6 @@
 
     </section>
 
-    <!-- TAB 2: HISTORIAL DE CIERRES -->
     <section id="tab-historial" class="hidden space-y-6">
       
       <div class="card-dark rounded-2xl p-6">
@@ -215,9 +194,7 @@
           <span class="text-xs text-gray-400 bg-[#242429] px-3 py-1 rounded-full border border-[#2d2d34]" id="cierre-count-badge">Cargando registros...</span>
         </div>
 
-        <!-- Lista del historial de cierres -->
         <div class="space-y-3" id="historial-container">
-          <!-- Esqueleto de carga inicial -->
           <div class="animate-pulse space-y-3">
             <div class="h-16 bg-[#242429] rounded-xl border border-[#2d2d34]"></div>
             <div class="h-16 bg-[#242429] rounded-xl border border-[#2d2d34]"></div>
@@ -230,10 +207,8 @@
 
   </main>
 
-  <!-- MODAL: VENTANA EMERGENTE DETALLES DE CIERRE -->
   <div id="details-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-all duration-300">
     <div class="card-dark w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-zinc-700/50 flex flex-col max-h-[90vh]">
-      <!-- Header -->
       <div class="p-6 border-b border-[#2d2d34] flex justify-between items-center bg-[#1e1e24]">
         <div class="flex items-center space-x-3">
           <div class="bg-amber-500 text-black p-2 rounded-xl">
@@ -249,15 +224,12 @@
         </button>
       </div>
 
-      <!-- Contenido -->
       <div class="p-6 space-y-6 overflow-y-auto flex-grow">
-        <!-- Tasa aplicada -->
         <div class="flex justify-between items-center p-3 bg-zinc-900/60 rounded-xl border border-[#2d2d34]">
           <span class="text-xs text-gray-400 font-medium">Tasa de Cambio aplicada:</span>
           <span class="text-sm font-bold text-amber-500" id="modal-tasa">Bs. 40.00</span>
         </div>
 
-        <!-- Métodos de pago desglosados -->
         <div class="space-y-3">
           <h4 class="text-xs font-bold text-gray-400 tracking-wider uppercase">Ingresos por Método de Pago</h4>
           <div class="grid grid-cols-2 gap-3">
@@ -280,7 +252,6 @@
           </div>
         </div>
 
-        <!-- Gastos en Modal -->
         <div class="space-y-3">
           <h4 class="text-xs font-bold text-rose-500 tracking-wider uppercase flex items-center justify-between">
             <span>Lista de Gastos</span>
@@ -288,8 +259,7 @@
           </h4>
           <div class="bg-[#242429]/50 rounded-xl border border-[#2d2d34] overflow-hidden">
             <div class="max-h-40 overflow-y-auto divide-y divide-[#2d2d34]" id="modal-gastos-list">
-              <!-- Cargado dinámicamente -->
-            </div>
+              </div>
             <div class="p-3 bg-zinc-900 flex justify-between items-center text-xs">
               <span class="text-gray-400">Total Deducciones por Gastos:</span>
               <span class="font-bold text-rose-400 font-mono" id="modal-total-gastos">$0.00</span>
@@ -297,14 +267,12 @@
           </div>
         </div>
 
-        <!-- Cifra Consolidada Final de Todo -->
         <div class="bg-gradient-to-r from-amber-500/10 to-yellow-600/10 border border-amber-500/30 rounded-2xl p-5 space-y-4">
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-bold text-amber-500 tracking-wider uppercase">Fórmula de Conversión</h4>
             <span class="text-[10px] text-gray-400 font-mono">Conversión automática de divisas</span>
           </div>
           
-          <!-- Representación matemática LaTeX -->
           <div class="text-xs text-center font-mono py-2 bg-black/40 rounded-lg text-gray-300">
             $$\text{Total USD} = Z + D + \frac{Bs + PM}{\text{Tasa}} - \text{Gastos}_\text{USD}$$
           </div>
@@ -324,7 +292,6 @@
         </div>
       </div>
 
-      <!-- Footer acción -->
       <div class="p-4 bg-[#1e1e24] border-t border-[#2d2d34] flex justify-end">
         <button onclick="closeDetailsModal()" class="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl uppercase tracking-wider transition-all">
           Cerrar Ventana
@@ -333,14 +300,13 @@
     </div>
   </div>
 
-  <!-- Integración de Firebase usando tus credenciales -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, addDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Configuración por defecto usando tus credenciales de producción
-    const defaultFirebaseConfig = {
+    // Configuración explícita solicitada
+    const firebaseConfig = {
       apiKey: "AIzaSyD1sJKaLw4ba41SPTMy1ZoPQCSHynuzLrA",
       authDomain: "gyg-2-0.firebaseapp.com",
       databaseURL: "https://gyg-2-0-default-rtdb.firebaseio.com",
@@ -351,21 +317,18 @@
       measurementId: "G-DPBHL3P6D7"
     };
 
-    // Detecta dinámicamente si el entorno inyecta otra configuración de base de datos
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultFirebaseConfig;
-
     // Inicializando Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'gyg-2-0';
+    const appId = 'gyg-2-0';
 
     // Manejadores de Estado
     let user = null;
     let localGastos = [];
     let cierresList = [];
 
-    // Inicializar autenticación de forma segura (Cumpliendo la regla 3 de Firebase)
+    // Inicializar autenticación silenciosa en segundo plano
     const initAuth = async () => {
       try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -382,7 +345,6 @@
     onAuthStateChanged(auth, (loggedUser) => {
       user = loggedUser;
       if (user) {
-        // Ejecutar lectura únicamente una vez autenticado
         listenToCierres();
       } else {
         showToast("Esperando autenticación...", false);
@@ -392,7 +354,7 @@
     // Arrancar la autenticación inmediatamente
     initAuth();
 
-    // Escuchar cambios en tiempo real (Regla de rutas estrictas y ordenamiento seguro)
+    // Escuchar cambios en tiempo real
     function listenToCierres() {
       if (!user) return;
       
@@ -404,7 +366,7 @@
           cierresList.push({ id: doc.id, ...doc.data() });
         });
         
-        // Ordenamiento local y seguro en memoria para evitar requerir índices compuestos manuales
+        // Ordenamiento local y seguro en memoria
         cierresList.sort((a, b) => new Date(b.creadoEn) - new Date(a.creadoEn));
         
         renderHistorial();
@@ -414,7 +376,7 @@
       });
     }
 
-    // Exponer funciones globalmente al objeto window para su correcto funcionamiento en los botones HTML
+    // Funciones del ciclo de vida expuestas globalmente
     window.addGastoItem = function() {
       const descInput = document.getElementById('gasto-descripcion');
       const montoInput = document.getElementById('gasto-monto');
@@ -478,7 +440,6 @@
       lucide.createIcons();
     }
 
-    // Cálculos consolidados en vivo
     window.calculateTotals = function() {
       const tasa = parseFloat(document.getElementById('tasa-dia').value) || 1;
       
@@ -487,12 +448,9 @@
       const bolivares = parseFloat(document.getElementById('monto-efectivo-bs').value) || 0;
       const pagoMovil = parseFloat(document.getElementById('monto-pago-movil').value) || 0;
 
-      // Todo consolidado en USD
       const ingresosUsd = zelle + dolares + (bolivares / tasa) + (pagoMovil / tasa);
-      // Todo consolidado en VES
       const ingresosVes = (zelle * tasa) + (dolares * tasa) + bolivares + pagoMovil;
 
-      // Cálculos de gastos
       let gastosUsd = 0;
       let gastosVes = 0;
 
@@ -530,7 +488,6 @@
       document.getElementById('live-total-ves').innerText = `${calculated.totales.netoVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
     };
 
-    // Guardar cierre de caja diario en Firebase Firestore
     window.saveCierreToFirebase = async function() {
       if (!user) {
         showToast("Error: No estás autenticado en el sistema de Firebase.", true);
@@ -568,7 +525,6 @@
         
         showToast("¡Cierre de Caja Diario guardado con éxito en Firebase!");
         
-        // Resetear inputs del formulario
         document.getElementById('monto-zelle').value = '';
         document.getElementById('monto-dolares').value = '';
         document.getElementById('monto-efectivo-bs').value = '';
@@ -577,7 +533,6 @@
         renderLocalGastosList();
         updateLiveCalculations();
 
-        // Redireccionar automáticamente al historial después de un breve delay
         setTimeout(() => {
           switchTab('historial');
         }, 1200);
@@ -591,7 +546,6 @@
       }
     };
 
-    // Renderizar lista en base a la información de Firestore en tiempo real
     function renderHistorial() {
       const container = document.getElementById('historial-container');
       
@@ -623,7 +577,6 @@
       });
     }
 
-    // Modal de Detalles del Historial de Cierres
     window.openDetailsModal = function(id) {
       const record = cierresList.find(c => c.id === id);
       if (!record) return;
@@ -659,7 +612,6 @@
       document.getElementById('modal-grand-total-usd').innerText = `$ ${record.totales.netoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       document.getElementById('modal-grand-total-ves').innerText = `${record.totales.netoVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
 
-      // Mostrar el modal
       const modal = document.getElementById('details-modal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -673,7 +625,6 @@
 
   </script>
 
-  <!-- Control de Pestañas SPA -->
   <script>
     function switchTab(tabName) {
       const tabCierre = document.getElementById('tab-cierre');
@@ -697,7 +648,6 @@
       }
     }
 
-    // Alertas tipo Toast personalizadas
     function showToast(message, isError = false) {
       const toast = document.getElementById('toast');
       const toastMsg = document.getElementById('toast-message');
@@ -726,7 +676,6 @@
     };
   </script>
 
-  <!-- Librería para el formateo de fórmulas en Modal de Detalles -->
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
