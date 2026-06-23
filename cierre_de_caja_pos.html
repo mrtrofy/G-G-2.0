@@ -302,10 +302,10 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, addDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Configuración explícita solicitada
+    // Forzando el uso exclusivo de tus credenciales de producción
     const firebaseConfig = {
       apiKey: "AIzaSyD1sJKaLw4ba41SPTMy1ZoPQCSHynuzLrA",
       authDomain: "gyg-2-0.firebaseapp.com",
@@ -317,7 +317,7 @@
       measurementId: "G-DPBHL3P6D7"
     };
 
-    // Inicializando Firebase
+    // Inicializando Firebase directamente sin validaciones de entorno confusas
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
@@ -328,14 +328,10 @@
     let localGastos = [];
     let cierresList = [];
 
-    // Inicializar autenticación silenciosa en segundo plano
+    // Inicializar autenticación de forma silenciosa obligatoria
     const initAuth = async () => {
       try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
+        await signInAnonymously(auth);
       } catch (error) {
         showToast("Error al inicializar sesión en Firebase: " + error.message, true);
       }
@@ -346,8 +342,6 @@
       user = loggedUser;
       if (user) {
         listenToCierres();
-      } else {
-        showToast("Esperando autenticación...", false);
       }
     });
 
@@ -366,7 +360,6 @@
           cierresList.push({ id: doc.id, ...doc.data() });
         });
         
-        // Ordenamiento local y seguro en memoria
         cierresList.sort((a, b) => new Date(b.creadoEn) - new Date(a.creadoEn));
         
         renderHistorial();
@@ -376,7 +369,7 @@
       });
     }
 
-    // Funciones del ciclo de vida expuestas globalmente
+    // Exponer funciones globalmente al objeto window
     window.addGastoItem = function() {
       const descInput = document.getElementById('gasto-descripcion');
       const montoInput = document.getElementById('gasto-monto');
