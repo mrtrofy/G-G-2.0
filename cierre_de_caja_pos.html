@@ -26,7 +26,6 @@
       border-color: #f59e0b;
       outline: none;
     }
-    /* Custom scrollbar for beautiful dark UI */
     ::-webkit-scrollbar {
       width: 6px;
     }
@@ -92,10 +91,15 @@
     <section id="tab-cierre" class="space-y-6">
       
       <div class="card-dark rounded-2xl p-6">
-        <h2 class="text-sm font-bold tracking-wider text-gray-400 mb-4 flex items-center uppercase">
-          <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full inline-block mr-2 animate-pulse"></span>
-          Ingresos / Métodos de Pago
-        </h2>
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-sm font-bold tracking-wider text-gray-400 flex items-center uppercase">
+            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full inline-block mr-2 animate-pulse"></span>
+            Ingresos / Métodos de Pago
+          </h2>
+          <span class="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg" id="sync-status">
+            Sincronizando ventas automáticas...
+          </span>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="bg-[#242429]/50 border border-[#2d2d34] p-4 rounded-xl flex flex-col justify-between">
@@ -302,9 +306,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Forzando el uso exclusivo de tus credenciales de producción
     const firebaseConfig = {
       apiKey: "AIzaSyD1sJKaLw4ba41SPTMy1ZoPQCSHynuzLrA",
       authDomain: "gyg-2-0.firebaseapp.com",
@@ -316,19 +319,69 @@
       measurementId: "G-DPBHL3P6D7"
     };
 
-    // Inicializando Firebase directamente sin validaciones de entorno confusas
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const appId = 'gyg-2-0';
 
-    // Manejadores de Estado
     let localGastos = [];
     let cierresList = [];
 
-    // Arrancar la escucha inmediatamente al cargar el script
+    // Arrancar procesos principales
     listenToCierres();
+    fetchVentasDelDia();
 
-    // Escuchar cambios en tiempo real sin restricción de Auth
+    // NUEVO: Función para consultar y sumar las ventas de 'tienda_1_sales' en tiempo real
+    function fetchVentasDelDia() {
+      const statusBadge = document.getElementById('sync-status');
+      const todayStr = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+      
+      const salesRef = collection(db, 'artifacts', appId, 'public', 'data', 'tienda_1_sales');
+      const q = query(salesRef, where('fecha', '==', todayStr));
+
+      onSnapshot(q, (snapshot) => {
+        let totalZelle = 0;
+        let totalDolares = 0;
+        let totalBolivares = 0;
+        let totalPagoMovil = 0;
+        let conteo = 0;
+
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const monto = parseFloat(data.total || data.monto || 0);
+          const metodo = data.metodoPago ? data.metodoPago.trim().toLowerCase() : '';
+
+          conteo++;
+
+          if (metodo.includes('zelle')) {
+            totalZelle += monto;
+          } else if (metodo.includes('dolar') || metodo.includes('efectivo $') || metodo === '$') {
+            totalDolares += monto;
+          } else if (metodo.includes('bolivar') || metodo === 'bs' || (metodo.includes('efectivo') && !metodo.includes('$'))) {
+            totalBolivares += monto;
+          } else if (metodo.includes('pago') || metodo.includes('movil') || metodo === 'pm') {
+            totalPagoMovil += monto;
+          }
+        });
+
+        // Cargar los totales calculados automáticamente en los inputs correspondientes
+        document.getElementById('monto-zelle').value = totalZelle > 0 ? totalZelle.toFixed(2) : '';
+        document.getElementById('monto-dolares').value = totalDolares > 0 ? totalDolares.toFixed(2) : '';
+        document.getElementById('monto-efectivo-bs').value = totalBolivares > 0 ? totalBolivares.toFixed(2) : '';
+        document.getElementById('monto-pago-movil').value = totalPagoMovil > 0 ? totalPagoMovil.toFixed(2) : '';
+
+        // Actualizar UI del estado
+        statusBadge.innerText = `Sincronizado: ${conteo} ventas de hoy cargadas`;
+        statusBadge.className = "text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg";
+        
+        // Recalcular el panel neto consolidado inferior
+        updateLiveCalculations();
+      }, (error) => {
+        console.error("Error sincronizando ventas: ", error);
+        statusBadge.innerText = "Error de sincronización automática";
+        statusBadge.className = "text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-lg";
+      });
+    }
+
     function listenToCierres() {
       const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'cierres_caja');
       
@@ -347,7 +400,6 @@
       });
     }
 
-    // Exponer funciones globalmente al objeto window
     window.addGastoItem = function() {
       const descInput = document.getElementById('gasto-descripcion');
       const montoInput = document.getElementById('gasto-monto');
