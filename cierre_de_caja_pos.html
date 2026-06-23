@@ -302,7 +302,6 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // Forzando el uso exclusivo de tus credenciales de producción
@@ -319,39 +318,18 @@
 
     // Inicializando Firebase directamente sin validaciones de entorno confusas
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
     const db = getFirestore(app);
     const appId = 'gyg-2-0';
 
     // Manejadores de Estado
-    let user = null;
     let localGastos = [];
     let cierresList = [];
 
-    // Inicializar autenticación de forma silenciosa obligatoria
-    const initAuth = async () => {
-      try {
-        await signInAnonymously(auth);
-      } catch (error) {
-        showToast("Error al inicializar sesión en Firebase: " + error.message, true);
-      }
-    };
+    // Arrancar la escucha inmediatamente al cargar el script
+    listenToCierres();
 
-    // Escuchar el estado de autenticación en tiempo real
-    onAuthStateChanged(auth, (loggedUser) => {
-      user = loggedUser;
-      if (user) {
-        listenToCierres();
-      }
-    });
-
-    // Arrancar la autenticación inmediatamente
-    initAuth();
-
-    // Escuchar cambios en tiempo real
+    // Escuchar cambios en tiempo real sin restricción de Auth
     function listenToCierres() {
-      if (!user) return;
-      
       const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'cierres_caja');
       
       onSnapshot(colRef, (snapshot) => {
@@ -482,11 +460,6 @@
     };
 
     window.saveCierreToFirebase = async function() {
-      if (!user) {
-        showToast("Error: No estás autenticado en el sistema de Firebase.", true);
-        return;
-      }
-
       const calculated = calculateTotals();
       
       if (calculated.ingresos.zelle === 0 && calculated.ingresos.dolares === 0 && 
