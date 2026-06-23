@@ -73,8 +73,8 @@
     </div>
 
     <div class="card-dark rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center space-x-3">
-        <div class="bg-amber-500/10 text-amber-500 p-2 rounded-lg">
+      <div class="flex items-center space-x-3 w-full sm:w-auto">
+        <div class="bg-amber-500/10 text-amber-500 p-2 rounded-lg flex-shrink-0">
           <i data-lucide="trending-up" class="w-5 h-5"></i>
         </div>
         <div>
@@ -82,9 +82,17 @@
           <p class="text-xs text-gray-400">Utilizada para consolidar montos mixtos automáticamente</p>
         </div>
       </div>
-      <div class="relative w-full sm:w-44">
-        <span class="absolute left-3 top-2.5 text-xs text-gray-500 font-bold">Bs.</span>
-        <input type="number" id="tasa-dia" value="40.00" step="0.01" min="0.1" oninput="updateLiveCalculations()" class="input-dark w-full py-2 pl-9 pr-3 rounded-xl text-right font-semibold text-amber-500">
+      
+      <div class="flex items-center space-x-3 w-full sm:w-auto justify-end">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 px-4 py-2 bg-[#242429] hover:bg-[#2d2d34] border border-[#2d2d34] text-gray-300 text-xs font-semibold rounded-xl transition-all duration-200 uppercase tracking-wider">
+          <i data-lucide="arrow-left" class="w-4 h-4 text-amber-500"></i>
+          <span>Volver</span>
+        </button>
+
+        <div class="relative w-full sm:w-36">
+          <span class="absolute left-3 top-2.5 text-xs text-gray-500 font-bold">Bs.</span>
+          <input type="number" id="tasa-dia" value="40.00" step="0.01" min="0.1" oninput="updateLiveCalculations()" class="input-dark w-full py-2 pl-9 pr-3 rounded-xl text-right font-semibold text-amber-500">
+        </div>
       </div>
     </div>
 
@@ -326,14 +334,12 @@
     let localGastos = [];
     let cierresList = [];
 
-    // Arrancar procesos principales
     listenToCierres();
     fetchVentasDelDia();
 
-    // NUEVO: Función para consultar y sumar las ventas de 'tienda_1_sales' en tiempo real
     function fetchVentasDelDia() {
       const statusBadge = document.getElementById('sync-status');
-      const todayStr = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+      const todayStr = new Date().toISOString().split('T')[0];
       
       const salesRef = collection(db, 'artifacts', appId, 'public', 'data', 'tienda_1_sales');
       const q = query(salesRef, where('fecha', '==', todayStr));
@@ -363,17 +369,14 @@
           }
         });
 
-        // Cargar los totales calculados automáticamente en los inputs correspondientes
         document.getElementById('monto-zelle').value = totalZelle > 0 ? totalZelle.toFixed(2) : '';
         document.getElementById('monto-dolares').value = totalDolares > 0 ? totalDolares.toFixed(2) : '';
         document.getElementById('monto-efectivo-bs').value = totalBolivares > 0 ? totalBolivares.toFixed(2) : '';
         document.getElementById('monto-pago-movil').value = totalPagoMovil > 0 ? totalPagoMovil.toFixed(2) : '';
 
-        // Actualizar UI del estado
         statusBadge.innerText = `Sincronizado: ${conteo} ventas de hoy cargadas`;
         statusBadge.className = "text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg";
         
-        // Recalcular el panel neto consolidado inferior
         updateLiveCalculations();
       }, (error) => {
         console.error("Error sincronizando ventas: ", error);
