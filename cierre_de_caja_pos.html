@@ -43,6 +43,10 @@
   <header class="border-b border-[#2d2d34] bg-[#1a1a1e] py-4 px-6 sticky top-0 z-40">
     <div class="max-w-4xl mx-auto flex items-center justify-between">
       <div class="flex items-center space-x-3">
+        <button onclick="window.history.back();" class="mr-2 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#242429] transition-all duration-200" title="Volver atrás">
+          <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        
         <div class="bg-amber-500 text-black p-2 rounded-lg font-bold">
           <i data-lucide="wallet" class="w-5 h-5"></i>
         </div>
@@ -331,7 +335,6 @@
     let localGastos = [];
     let cierresList = [];
 
-    // Intentar Auth anónima de forma silenciosa para que no rompa el flujo de lectura si falla en consola
     const initAuth = async () => {
       try {
         await signInAnonymously(auth);
@@ -342,19 +345,16 @@
 
     onAuthStateChanged(auth, (loggedUser) => {
       user = loggedUser;
-      // Escuchamos el historial independientemente, Firebase permitirá leer según tus reglas de seguridad (Rules)
       listenToCierres();
     });
 
     initAuth();
     fetchVentasDelDia();
 
-    // RUTA AUTOMÁTICA SOLICITADA PARA ACTUALIZAR LAS VENTAS DE HOY
     function fetchVentasDelDia() {
       const statusBadge = document.getElementById('sync-status');
       const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       
-      // Mapeo exacto de subcolección modular de Firebase
       const salesRef = collection(db, 'artifacts', 'gg-shopping-pos', 'public', 'data', 'tienda_1_sales');
       const q = query(salesRef, where('fecha', '==', todayStr));
 
@@ -383,7 +383,6 @@
           }
         });
 
-        // Inyectar de forma directa en los inputs de ingresos
         document.getElementById('monto-zelle').value = totalZelle > 0 ? totalZelle.toFixed(2) : '';
         document.getElementById('monto-dolares').value = totalDolares > 0 ? totalDolares.toFixed(2) : '';
         document.getElementById('monto-efectivo-bs').value = totalBolivares > 0 ? totalBolivares.toFixed(2) : '';
