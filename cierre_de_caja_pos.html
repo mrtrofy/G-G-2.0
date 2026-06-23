@@ -84,11 +84,6 @@
       </div>
       
       <div class="flex items-center space-x-3 w-full sm:w-auto justify-end">
-        <button onclick="window.history.back()" class="flex items-center space-x-2 px-4 py-2 bg-[#242429] hover:bg-[#2d2d34] border border-[#2d2d34] text-gray-300 text-xs font-semibold rounded-xl transition-all duration-200 uppercase tracking-wider">
-          <i data-lucide="arrow-left" class="w-4 h-4 text-amber-500"></i>
-          <span>Volver</span>
-        </button>
-
         <div class="relative w-full sm:w-36">
           <span class="absolute left-3 top-2.5 text-xs text-gray-500 font-bold">Bs.</span>
           <input type="number" id="tasa-dia" value="40.00" step="0.01" min="0.1" oninput="updateLiveCalculations()" class="input-dark w-full py-2 pl-9 pr-3 rounded-xl text-right font-semibold text-amber-500">
@@ -271,7 +266,7 @@
           </h4>
           <div class="bg-[#242429]/50 rounded-xl border border-[#2d2d34] overflow-hidden">
             <div class="max-h-40 overflow-y-auto divide-y divide-[#2d2d34]" id="modal-gastos-list">
-              </div>
+            </div>
             <div class="p-3 bg-zinc-900 flex justify-between items-center text-xs">
               <span class="text-gray-400">Total Deducciones por Gastos:</span>
               <span class="font-bold text-rose-400 font-mono" id="modal-total-gastos">$0.00</span>
@@ -314,6 +309,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -328,21 +324,37 @@
     };
 
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db = getFirestore(app);
 
+    let user = null;
     let localGastos = [];
     let cierresList = [];
 
-    // Arrancar procesos principales
-    listenToCierres();
+    // Intentar Auth anónima de forma silenciosa para que no rompa el flujo de lectura si falla en consola
+    const initAuth = async () => {
+      try {
+        await signInAnonymously(auth);
+      } catch (error) {
+        console.warn("Autenticación anónima desactivada en consola de Firebase. Se procederá sin token explícito:", error.message);
+      }
+    };
+
+    onAuthStateChanged(auth, (loggedUser) => {
+      user = loggedUser;
+      // Escuchamos el historial independientemente, Firebase permitirá leer según tus reglas de seguridad (Rules)
+      listenToCierres();
+    });
+
+    initAuth();
     fetchVentasDelDia();
 
-    // RUTA EXACTA Y CORREGIDA PARA ACCEDER A LA SUBCOLECCIÓN DE FORMA MODULAR
+    // RUTA AUTOMÁTICA SOLICITADA PARA ACTUALIZAR LAS VENTAS DE HOY
     function fetchVentasDelDia() {
       const statusBadge = document.getElementById('sync-status');
-      const todayStr = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+      const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       
-      // Corregido: Mapeo estricto de los segmentos para Firestore modular
+      // Mapeo exacto de subcolección modular de Firebase
       const salesRef = collection(db, 'artifacts', 'gg-shopping-pos', 'public', 'data', 'tienda_1_sales');
       const q = query(salesRef, where('fecha', '==', todayStr));
 
@@ -371,27 +383,24 @@
           }
         });
 
-        // Cargar los totales calculados automáticamente en los inputs correspondientes
+        // Inyectar de forma directa en los inputs de ingresos
         document.getElementById('monto-zelle').value = totalZelle > 0 ? totalZelle.toFixed(2) : '';
         document.getElementById('monto-dolares').value = totalDolares > 0 ? totalDolares.toFixed(2) : '';
         document.getElementById('monto-efectivo-bs').value = totalBolivares > 0 ? totalBolivares.toFixed(2) : '';
         document.getElementById('monto-pago-movil').value = totalPagoMovil > 0 ? totalPagoMovil.toFixed(2) : '';
 
-        // Actualizar UI del estado
         statusBadge.innerText = `Sincronizado: ${conteo} ventas de hoy cargadas`;
         statusBadge.className = "text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg";
         
-        // Recalcular el panel neto consolidado inferior
         updateLiveCalculations();
       }, (error) => {
-        console.error("Error sincronizando ventas: ", error);
-        statusBadge.innerText = "Error de sincronización automática";
+        console.error("Error cargando ventas automatizadas: ", error);
+        statusBadge.innerText = "Error al sincronizar ventas de hoy";
         statusBadge.className = "text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-lg";
       });
     }
 
     function listenToCierres() {
-      // Ajustado el almacenamiento de cierres_caja bajo la misma estructura del proyecto
       const colRef = collection(db, 'artifacts', 'gg-shopping-pos', 'public', 'data', 'cierres_caja');
       
       onSnapshot(colRef, (snapshot) => {
@@ -401,11 +410,10 @@
         });
         
         cierresList.sort((a, b) => new Date(b.creadoEn) - new Date(a.creadoEn));
-        
         renderHistorial();
         document.getElementById('cierre-count-badge').innerText = `${cierresList.length} Registros Guardados`;
       }, (error) => {
-        showToast("Error cargando historial de cierres: " + error.message, true);
+        console.error("Error de lectura en cierres: ", error.message);
       });
     }
 
@@ -431,7 +439,6 @@
       };
 
       localGastos.push(nuevoGasto);
-      
       descInput.value = '';
       montoInput.value = '';
       
@@ -515,7 +522,6 @@
 
     window.updateLiveCalculations = function() {
       const calculated = calculateTotals();
-      
       document.getElementById('live-total-usd').innerText = `$ ${calculated.totales.netoUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       document.getElementById('live-total-ves').innerText = `${calculated.totales.netoVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
     };
@@ -663,13 +669,11 @@
       if (tabName === 'cierre') {
         tabCierre.classList.remove('hidden');
         tabHistorial.classList.add('hidden');
-        
         tabCierreBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-amber-500 text-black shadow-md";
         tabHistorialBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-300 hover:bg-[#242429]";
       } else {
         tabCierre.classList.add('hidden');
         tabHistorial.classList.remove('hidden');
-        
         tabCierreBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-300 hover:bg-[#242429]";
         tabHistorialBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-amber-500 text-black shadow-md";
       }
@@ -703,7 +707,6 @@
     };
   </script>
 
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 </body>
